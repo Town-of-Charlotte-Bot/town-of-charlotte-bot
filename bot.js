@@ -1,3 +1,4 @@
+// Constants
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
@@ -10,5 +11,7 @@ client.on('message', message => {
         message.reply('pong');
   	}
 });
+
+client.setPlayingGame("Town of Charlotte");
 
 client.login(process.env.BOT_TOKEN);
