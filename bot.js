@@ -1,17 +1,33 @@
-// Constants
+// Main
 const Discord = require('discord.js');
-const client = new Discord.Client();
+const Client = new Discord.Client();
 
-client.on('ready', () => {
+var frameCount = 0;
+
+Client.on('ready', () => {
     console.log('I am ready!');
 });
 
-client.on('message', message => {
+Client.on('message', message => {
     if (message.content === 'ping') {
         message.reply('pong');
   	}
 });
 
-client.setPlayingGame("Town of Charlotte");
+setInterval(function() {
+    frameCount++;
+    
+    // Borrowed code from a friend
+    /*if (frameCount % 10000 === 0) {
+        var randOfTheDay = Math.floor(Math.random() * games.length);
+        if (blazeIsStreaming) {
+            Client.setStreaming("Blaze programming me!", "https://twitch.tv/blazeprogramming", 1);
+        } else {
+            Client.setPlayingGame(games[randOfTheDay]);
+        }
+    }*/
+}, 1);
 
-client.login(process.env.BOT_TOKEN);
+Client.setPlayingGame("Town of Charlotte");
+
+Client.login(process.env.BOT_TOKEN);
