@@ -1,18 +1,18 @@
 // Main
-const Discord = require('discord.js');
+const Discord = require("discord.js");
 const Client = new Discord.Client();
 
 const prefix = "//";
 var frameCount = 0;
 
-Client.on('ready', () => {
+Client.on("ready", () => {
     console.log('I am ready!');
 });
 
-Client.on('message', message => {
-    if (message.content === prefix + 'ping') {
+Client.on("message", message => {
+    if (message.content === prefix + "ping") {
         message.reply('pong');
-  	} else if (message.content === "@Town of Charlotte#7554 help") {
+  	} else if (message.content === prefix + "help") {
         message.reply("**Help**\n\n");
     }
 });
