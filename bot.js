@@ -12,20 +12,10 @@ Client.on('ready', () => {
 Client.on('message', message => {
     if (message.content === prefix + 'ping') {
         message.reply('pong');
-  	}
+  	} else if (message.content === ((prefix + "help") || ("@Town of Charlotte#7554 help")) {
+        message.reply("**Help**\n\n");
+    }
 });
-
-//setInterval(function() {
-    // Borrowed code from a friend
-    /*if (frameCount % 10000 === 0) {
-        var randOfTheDay = Math.floor(Math.random() * games.length);
-        if (blazeIsStreaming) {
-            Client.setStreaming("Blaze programming me!", "https://twitch.tv/blazeprogramming", 1);
-        } else {
-            Client.setPlayingGame(games[randOfTheDay]);
-        }
-    }*/
-//}, 1);
 
 //Client.setPlayingGame("Town of Charlotte");
 
