@@ -17,7 +17,7 @@ Client.on("message", message => {
     if (message.content === prefix + /ping/i) {
         message.reply('Pong!');
   	} else if (message.content === prefix + "help") {
-        message.reply("\n\n**Help**\n\n`//help` - Displays a list of bot commands\n");
+        message.reply("\n\n__**Help**__\n\n*General Commands*\n`//help` - Lists bot commands\n\n*Game Commands*\n`//game-current` - Shows stats about the current game");
     } else if (message.content === prefix + "logieboi") {
         message.reply("***Logie da Bear!***");
     }
