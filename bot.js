@@ -17,7 +17,7 @@ Client.on("message", message => {
     if (message.content === prefix + /ping/i) {
         message.reply('Pong!');
   	} else if (message.content === prefix + "help") {
-        var txt = "\n\n__**Help**__\n;
+        var txt = "\n\n__**Help**__\n";
         txt += "\n*General Commands*";
         txt += "\n`//help` - Lists bot commands\n";
         txt += "\n*Game Commands*\n";
