@@ -7,7 +7,7 @@ var frameCount = 0;
 
 Client.on("ready", () => {
     console.log('I am ready!');
-    Client.user.setGame('Town of Charlotte');
+    Client.user.setPresence({ status: 'online', game: { name: 'GAME' } });
 });
 
 Client.on("message", message => {
