@@ -26,6 +26,6 @@ Client.on('message', message => {
     }*/
 //}, 1);
 
-Client.setPlayingGame("Town of Charlotte");
+//Client.setPlayingGame("Town of Charlotte");
 
 Client.login(process.env.BOT_TOKEN);
