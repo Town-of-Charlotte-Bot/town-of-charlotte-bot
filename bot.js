@@ -14,15 +14,7 @@ Client.on('message', message => {
   	}
 });
 
-setInterval(function() {
-    frameCount++;
-    var req = new XMLHttpRequest();
-    req.onload = function() {
-        console.log(this.response);
-    };
-    req.open("GET", "https://town-of-charlotte-bot.herokuapp.com", true);
-    req.send();
-    
+//setInterval(function() {
     // Borrowed code from a friend
     /*if (frameCount % 10000 === 0) {
         var randOfTheDay = Math.floor(Math.random() * games.length);
@@ -32,7 +24,7 @@ setInterval(function() {
             Client.setPlayingGame(games[randOfTheDay]);
         }
     }*/
-}, 1);
+//}, 1);
 
 Client.setPlayingGame("Town of Charlotte");
 
