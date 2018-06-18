@@ -11,8 +11,8 @@ Client.on("ready", () => {
 });
 
 Client.on("message", message => {
-    if (message.content === prefix + "ping") {
-        message.reply('pong');
+    if (message.content === prefix + /ping/i) {
+        message.reply('Pong!');
   	} else if (message.content === prefix + "help") {
         message.reply("\n\n**Help**\n\n`//help` - Displays a list of bot commands\n");
     }
