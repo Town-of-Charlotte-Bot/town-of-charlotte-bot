@@ -16,12 +16,12 @@ Client.on('message', message => {
 
 setInterval(function() {
     frameCount++;
-    var request = new XMLHttpRequest();
-    request.onload = function() {
+    var req = new XMLHttpRequest();
+    req.onload = function() {
         console.log(this.response);
     };
-    request.open("GET", "https://town-of-charlotte-bot.herokuapp.com", true);
-    request.send();
+    req.open("GET", "https://town-of-charlotte-bot.herokuapp.com", true);
+    req.send();
     
     // Borrowed code from a friend
     /*if (frameCount % 10000 === 0) {
