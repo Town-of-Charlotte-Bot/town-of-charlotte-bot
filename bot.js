@@ -7,16 +7,15 @@ var frameCount = 0;
 
 Client.on("ready", () => {
     console.log('I am ready!');
+    Client.user.setGame('Town of Charlotte');
 });
 
 Client.on("message", message => {
     if (message.content === prefix + "ping") {
         message.reply('pong');
   	} else if (message.content === prefix + "help") {
-        message.reply("**Help**\n\n");
+        message.reply("\n\n**Help**\n\n`//help` - Displays a list of bot commands\n");
     }
 });
-
-//Client.setPlayingGame("Town of Charlotte");
 
 Client.login(process.env.BOT_TOKEN);
