@@ -17,7 +17,15 @@ Client.on("message", message => {
     if (message.content === prefix + /ping/i) {
         message.reply('Pong!');
   	} else if (message.content === prefix + "help") {
-        message.reply("\n\n__**Help**__\n\n*General Commands*\n`//help` - Lists bot commands\n\n*Game Commands*\n`//game-current` - Shows stats about the current game\n`//game-day` - Gives the day of the current game\n`//game-dead` - Lists the players who are dead in the current game\n`//game-alive` - Lists the players who are alive in the current game");
+        var txt = "\n\n__**Help**__\n;
+        txt += "\n*General Commands*";
+        txt += "\n`//help` - Lists bot commands\n";
+        txt += "\n*Game Commands*\n";
+        txt += "`//game-current` - Shows stats about the current game\n";
+        txt += "`//game-day` - Gives the day of the current game\n";
+        txt += "`//game-dead` - Lists the players who are dead in the current game\n";
+        txt += "`//game-alive` - Lists the players who are alive in the current game";
+        message.reply(txt);
     } else if (message.content === prefix + "logieboi") {
         message.reply("***Logie da Bear!***");
     }
