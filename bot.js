@@ -12,9 +12,7 @@ Client.on('ready', () => {
 Client.on('message', message => {
     if (message.content === prefix + 'ping') {
         message.reply('pong');
-  	} else if (message.content === ((prefix + "help") || ("@Town of Charlotte#7554 help")) {
-        message.reply("**Help**\n\n");
-    }
+  	}
 });
 
 //Client.setPlayingGame("Town of Charlotte");
