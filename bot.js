@@ -2,6 +2,7 @@
 const Discord = require('discord.js');
 const Client = new Discord.Client();
 
+const prefix = "//";
 var frameCount = 0;
 
 Client.on('ready', () => {
@@ -9,7 +10,7 @@ Client.on('ready', () => {
 });
 
 Client.on('message', message => {
-    if (message.content === 'ping') {
+    if (message.content === prefix + 'ping') {
         message.reply('pong');
   	}
 });
