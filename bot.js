@@ -12,7 +12,7 @@ Client.on("ready", () => {
 
 // Message
 Client.on("message", message => {
-    let players = message.guild.roles.find("name", "Playing Game").members;
+//     let players = message.guild.roles.find("name", "Playing Game").members;
     /*const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();*/
     
@@ -57,7 +57,7 @@ Client.on("message", message => {
                 }
             }
         });
-    } if (message.content === prefix + "game-players") {
+    } else if (message.content === prefix + "game-players") {
         message.channel.send({
             embed: {
                 color: 3447003,
