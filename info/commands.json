@@ -4,6 +4,10 @@
             "help": {
                 "devinfo": "Displays the help screen, with the list of all visible commands",
                 "working": "true"
+            },
+            "info": {
+                "devinfo": "Gives info about the Town of Charlotte game and how to play",
+                "working": "false"
             }
         }
     },
