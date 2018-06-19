@@ -8,7 +8,6 @@ const prefix = "//";
 // Load
 Client.on("ready", () => {
     console.log('Ready for action!');
-    Clinet.setGame(prefix + "help");
 });
 
 // Message
