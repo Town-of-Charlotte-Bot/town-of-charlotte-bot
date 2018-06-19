@@ -12,7 +12,7 @@ Client.on("ready", () => {
 
 // Message
 Client.on("message", message => {
-//     let players = message.guild.roles.find("name", "Playing Game").members;
+    let players = message.guild.roles.find("name", "Playing Game");
     /*const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();*/
     
@@ -42,7 +42,7 @@ Client.on("message", message => {
                             + "`players-alive` - Lists the players who are alive in the current game"
                     },
                     {
-                        name: "Gamemaster Commands",
+                        name: "For Gamemasters",
                         value: "`game-initiate` - Initiate a new game for players to join\n"
                             + "`game-start` - Start a new game with the players that have joined\n"
                             + "`game-end` - End the current game\n"
@@ -58,7 +58,6 @@ Client.on("message", message => {
             }
         });
     } else if (message.content === prefix + "game-players") {
-        //message.channel.send("Hallo!");
         message.channel.send({
             embed: {
                 //color: 3447003,
