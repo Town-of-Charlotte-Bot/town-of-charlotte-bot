@@ -8,6 +8,7 @@ const prefix = "//";
 // Load
 Client.on("ready", () => {
     console.log('Ready for action!');
+    Clinet.setGame(prefix + "help");
 });
 
 // Message
@@ -23,7 +24,7 @@ Client.on("message", message => {
             embed: {
                 color: 3447003,
                 author: {
-                    name: "< Help >"
+                    name: "> Help <"
                 },
                 title: "List of commands",
                 fields: [
