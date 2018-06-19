@@ -1,68 +1,65 @@
 {
-    {
-        name: "General",
-        commands: {
-            help: {
-                devinfo: "Displays the help screen, with the list of all visible commands",
-                working: true
+    "General": {
+        "commands": {
+            "help": {
+                "devinfo": "Displays the help screen, with the list of all visible commands",
+                "working": "true"
             }
         }
     },
-    {
-        name: "Game",
-        commands: {
-            game_join: {
-                devinfo: "Join the currently initiated game",
-                working: false
+    "Game": {
+        "commands": {
+            "game-join": {
+                "devinfo": "Join the currently initiated game",
+                "working": "false"
             },
-            game_stats: {
-                devinfo: "Show vital-statistics about the current game",
-                working: false
+            "game-stats": {
+                "devinfo": "Show vital-statistics about the current game",
+                "working": "false"
             },
-            game_players: {
-                devinfo: "Lists all players in the current game",
-                working: false
+            "game-players": {
+                "devinfo": "Lists all players in the current game",
+                "working": "false"
             },
-            players_dead: {
-                devinfo: "Lists the players who are dead in the current game",
-                working: false
+            "players-dead": {
+                "devinfo": "Lists the players who are dead in the current game",
+                "working": "false"
             },
-            players_alive: {
-                devinfo: "Lists the players who are alive in the current game",
-                working: false
+            "players-alive": {
+                "devinfo": "Lists the players who are alive in the current game",
+                "working": "false"
             }
         }
     },
-    {
-        name: "Gamemaster Commands",
-        commands: {
-            game_initiate: {
-                devinfo: "Initiate a new game for players to join",
-                working: false
+    "Gamemaster": {
+        "commands": {
+            "game-initiate": {
+                "devinfo": "Initiate a new game for players to join",
+                "working": "false"
             },
-            game_start: {
-                devinfo: "Start a new game with the players that have joined",
-                working: false
+            "game-start": {
+                "devinfo": "Start a new game with the players that have joined",
+                "working": "false"
             },
-            game_end: {
-                devinfo: "End the current game",
-                working: false
+            "game-end": {
+                "devinfo": "End the current game",
+                "working": "false"
             },
-            players_good: {
-                devinfo: "DMs the user a list of all good players in the current game",
-                working: false
+            "players-good": {
+                "devinfo": "DMs the user a list of all good players in the current game",
+                "working": "false"
             },
-            players_evil: {
-                devinfo: "DMs the user a list of all evil players in the current game",
-                working: false
+            "players-evil": {
+                "devinfo": "DMs the user a list of all evil players in the current game",
+                "working": "false"
             },
-            players_neutral: {
-                devinfo: "DMs the user a list of all neutral players in the current game",
-                working: false
+            "players-neutral": {
+                "devinfo": "DMs the user a list of all neutral players in the current game",
+                "working": "false"
             },
-            players_list: {
-                devinfo: "DMs the user a list of all players in the current game and their respective roles",
-                working: false
+            "players-list": {
+                "devinfo": "DMs the user a list of all players in the current game and their respective roles",
+                "working": "false"
             }
         }
     }
