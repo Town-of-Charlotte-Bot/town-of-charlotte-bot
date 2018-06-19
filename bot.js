@@ -19,7 +19,6 @@ Client.on("message", message => {
     if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
   	} else if (message.content === prefix + "help") {
-        // I know this isn't especially syntactually good, but it makes it easier to read
         message.channel.send({
             embed: {
                 color: 3447003,
@@ -32,6 +31,7 @@ Client.on("message", message => {
                         name: "General",
                         value: "`help` - Lists bot commands"
                     },
+                    // I know this isn't especially syntactually good, but it makes it easier to read
                     {
                         name: "Game",
                         value: "`game-join` - Join the currently initiated game\n"
@@ -57,7 +57,7 @@ Client.on("message", message => {
             }
         });
     } else if (message.content === prefix + "game-players") {
-        message.channel.send({
+        /*message.channel.send({
             embed: {
                 color: 3447003,
                 author: {
@@ -78,7 +78,7 @@ Client.on("message", message => {
                     text: "Not what you're looking for? " + prefix + "help"
                 }
             }
-        });
+        });*/
     } else if (message.content === prefix + "logieboi") {
         message.channel.send(":bear: ***Logie da Bear!*** :bear:");
     } else if (message.content === prefix + "konurpapa") {
