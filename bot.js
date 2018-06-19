@@ -15,6 +15,7 @@ Client.on("message", message => {
 //     let players = message.guild.roles.find("name", "Playing Game");
     let playingRole = "458590289477763073";
     let players = message.guild.roles.get(playingRole).members;
+    console.log(`Got ${players.size} members with that role.`);
     
     if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
@@ -68,7 +69,7 @@ Client.on("message", message => {
                 fields: [
                     {
                         name: "Users",
-                        value: players
+                        value: "Test1"
                     },
                     {
                         name: "Number",
