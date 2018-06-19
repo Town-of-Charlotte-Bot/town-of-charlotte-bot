@@ -3,7 +3,6 @@ const Client = new Discord.Client();
 
 // Main
 const prefix = "//";
-const players = message.guild.roles.find("name", "Playing Game").members;
 //var data = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
 // Load
@@ -13,8 +12,9 @@ Client.on("ready", () => {
 
 // Message
 Client.on("message", message => {
-    const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    const command = args.shift().toLowerCase();
+    let players = message.guild.roles.find("name", "Playing Game").members;
+    /*const args = message.content.slice(prefix.length).trim().split(/ +/g);
+    const command = args.shift().toLowerCase();*/
     
     if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
@@ -57,7 +57,7 @@ Client.on("message", message => {
             }
         });
     } else if (message.content === prefix + "game-players") {
-        /*message.channel.send({
+        message.channel.send({
             embed: {
                 color: 3447003,
                 author: {
@@ -78,7 +78,7 @@ Client.on("message", message => {
                     text: "Not what you're looking for? " + prefix + "help"
                 }
             }
-        });*/
+        });
     } else if (message.content === prefix + "logieboi") {
         message.channel.send(":bear: ***Logie da Bear!*** :bear:");
     } else if (message.content === prefix + "konurpapa") {
