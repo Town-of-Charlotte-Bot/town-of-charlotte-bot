@@ -56,7 +56,7 @@ Client.on("message", message => {
         });
     } else if (message.content === prefix + "game-players") {
         let players = message.guild.roles.find("name", "Playing Game");
-        console.log(`Got ${players.size} members with that role:\n${players.map(member=>{return member.user.username;})}`);
+        console.log(`Got ${players.size} members with that role:\n${players}`);
         
         message.channel.send({
             embed: {
