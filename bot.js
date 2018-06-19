@@ -1,17 +1,17 @@
 const Discord = require("discord.js");
-const Client = new Discord.Client();
+const client = new Discord.Client();
 
 // Main
 const prefix = "//";
 //var data = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
 // Load
-Client.on("ready", () => {
+client.on("ready", () => {
     console.log('Ready for action!');
 });
 
 // Message
-Client.on("message", message => {
+client.on("message", message => {
 //     let players = message.guild.roles.find("name", "Playing Game");
     if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
