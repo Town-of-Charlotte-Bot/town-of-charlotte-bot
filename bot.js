@@ -109,7 +109,7 @@ client.on("message", async message => {
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
-    const playing = message.server.roles.get("name", "Playing Game");
+    //const playing = message.server.roles.get("name", "Playing Game");
     
     switch (command) {
         case "ping":
