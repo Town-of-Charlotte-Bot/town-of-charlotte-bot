@@ -14,7 +14,7 @@ Client.on("ready", () => {
 Client.on("message", message => {
 //     let players = message.guild.roles.find("name", "Playing Game");
     let playingRole = "458590289477763073";
-    let players = message.guild.roles.get(roleID).members;
+    let players = message.guild.roles.get(playingRole).members;
     
     if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
