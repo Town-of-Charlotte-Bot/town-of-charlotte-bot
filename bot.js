@@ -12,9 +12,9 @@ Client.on("ready", () => {
 
 // Message
 Client.on("message", message => {
-    let players = message.guild.roles.find("name", "Playing Game");
-    /*const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    const command = args.shift().toLowerCase();*/
+//     let players = message.guild.roles.find("name", "Playing Game");
+    let playingRole = "458590289477763073";
+    let players = message.guild.roles.get(roleID).members;
     
     if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
@@ -68,7 +68,7 @@ Client.on("message", message => {
                 fields: [
                     {
                         name: "Users",
-                        value: JSON.stringify(players.members)
+                        value: players
                     },
                     {
                         name: "Number",
