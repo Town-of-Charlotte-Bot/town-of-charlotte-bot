@@ -3,6 +3,7 @@ const Client = new Discord.Client();
 
 // Main
 const prefix = "//";
+const players = message.guild.roles.find("name", "Playing Game").members;
 //var data = JSON.parse(fs.readFileSync("package.json", "utf8"));
 
 // Load
@@ -56,8 +57,6 @@ Client.on("message", message => {
             }
         });
     } else if (message.content === prefix + "game-players") {
-        let players = message.guild.roles.find("name", "Playing Game").members;
-        
         message.channel.send({
             embed: {
                 color: 3447003,
@@ -72,7 +71,7 @@ Client.on("message", message => {
                     },
                     {
                         name: "Number:",
-                        value: players.size
+                        value: ""
                     }
                 ],
                 footer: {
