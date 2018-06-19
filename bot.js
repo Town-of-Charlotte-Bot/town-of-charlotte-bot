@@ -13,10 +13,6 @@ Client.on("ready", () => {
 // Message
 Client.on("message", message => {
 //     let players = message.guild.roles.find("name", "Playing Game");
-    let playingRole = "458590289477763073";
-    let players = message.guild.roles.get(playingRole).members;
-    console.log(`Got ${players.size} members with that role:\n${JSON.stringify(players)}`);
-    
     if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
   	} else if (message.content === prefix + "help") {
@@ -59,6 +55,9 @@ Client.on("message", message => {
             }
         });
     } else if (message.content === prefix + "game-players") {
+        let players = message.guild.roles.find("name", "Playing Game");
+        console.log(`Got ${players.size} members with that role:\n${players.map(m=>m.user.tag)}`);
+        
         message.channel.send({
             embed: {
                 //color: 3447003,
@@ -73,7 +72,7 @@ Client.on("message", message => {
                     },
                     {
                         name: "Number",
-                        value: "Test2"
+                        value: players.size
                     }
                 ],
                 footer: {
