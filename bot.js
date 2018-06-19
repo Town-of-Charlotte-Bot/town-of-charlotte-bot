@@ -58,29 +58,29 @@ Client.on("message", message => {
             }
         });
     } else if (message.content === prefix + "game-players") {
-        message.channel.send("Hallo!");
-        /*message.channel.send({
+        //message.channel.send("Hallo!");
+        message.channel.send({
             embed: {
                 //color: 3447003,
                 author: {
                     name: "> Players <"
                 },
-                title: "List of the players of the current game",
+                title: "List of players in the current game",
                 fields: [
                     {
-                        name: "Users:",
-                        value: "Test"
+                        name: "Users",
+                        value: "Test1"
                     },
                     {
-                        name: "Number:",
-                        value: ""
+                        name: "Number",
+                        value: "Test2"
                     }
                 ],
                 footer: {
                     text: "Not what you're looking for? " + prefix + "help"
                 }
             }
-        });*/
+        });
     } else if (message.content === prefix + "logieboi") {
         message.channel.send(":bear: ***Logie da Bear!*** :bear:");
     } else if (message.content === prefix + "konurpapa") {
