@@ -58,6 +58,9 @@ Client.on("message", message => {
         let players = message.guild.roles.find("name", "Playing Game");
         console.log(`Got ${players.size} members with that role:\n${JSON.stringify(players)}`);
         
+        const guildNames = client.guilds.map(g => g.name).join("\n");
+        console.log(guildNames);
+        
         message.channel.send({
             embed: {
                 //color: 3447003,
@@ -72,7 +75,7 @@ Client.on("message", message => {
                     },
                     {
                         name: "Number",
-                        value: "" + players.size
+                        value: "Test2"
                     }
                 ],
                 footer: {
@@ -86,5 +89,72 @@ Client.on("message", message => {
         message.channel.send("_Woot!_");
     }
 });
-
+/*
 Client.login(process.env.BOT_TOKEN);
+
+
+
+const Discord = require("discord.js");
+const client = new Discord.Client();
+const config = require("./config.json");
+
+client.on("ready", () => {
+  console.log(`Ready for action! Serving ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} servers.`);
+  client.user.setActivity(`Town of Charlotte ~ ${prefix}`);
+});
+
+client.on("guildCreate", guild => {
+  console.log(`Joined new server: ${guild.name} (id: ${guild.id}). Serving ${guild.memberCount} new members!`);
+});
+
+client.on("guildDelete", guild => {
+  console.log(`Removed from server: ${guild.name} (id: ${guild.id}).`);
+});
+
+
+client.on("message", async message => {
+  if(message.author.bot) return;
+  
+  if(message.content.indexOf(config.prefix) !== 0) return;
+  
+  const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
+  const command = args.shift().toLowerCase();
+  
+  if(command === "ping") {
+    const m = await message.channel.send("Pinging...");
+    m.edit(`Pong! Pinged in ${m.createdTimestamp - message.createdTimestamp}ms.`);
+  }
+  
+  if(command === "kick") {
+    if(!message.member.roles.some(r=>["Administrator", "Moderator"].includes(r.name)) )
+      return message.reply("Sorry, you don't have permissions to use this!");
+    
+    let member = message.mentions.members.first() || message.guild.members.get(args[0]);
+    if(!member)
+      return message.reply("Please mention a valid member of this server");
+    if(!member.kickable) 
+      return message.reply("I cannot kick this user! Do they have a higher role? Do I have kick permissions?");
+    
+    let reason = args.slice(1).join(' ');
+    if(!reason) reason = "No reason provided";
+    
+    // Now, time for a swift kick in the nuts!
+    await member.kick(reason)
+      .catch(error => message.reply(`Sorry ${message.author} I couldn't kick because of : ${error}`));
+    message.reply(`${member.user.tag} has been kicked by ${message.author.tag} because: ${reason}`);
+  }
+  
+  if(command === "purge") {
+    const deleteCount = parseInt(args[0], 10);
+    
+    if(!deleteCount || deleteCount < 2 || deleteCount > 100)
+      return message.reply("Please provide a number between 2 and 100 for the number of messages to purge.");
+    
+    // So we get our messages, and delete them. Simple enough, right?
+    const fetched = await message.channel.fetchMessages({limit: deleteCount});
+    message.channel.bulkDelete(fetched)
+      .catch(error => message.reply(`Couldn't delete messages because of: ${error}`));
+  }
+});*/
+
+client.login(process.env.BOT_TOKEN);
