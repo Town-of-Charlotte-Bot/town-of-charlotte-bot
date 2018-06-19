@@ -21,7 +21,7 @@ Client.on("message", message => {
   	} else if (message.content === prefix + "help") {
         message.channel.send({
             embed: {
-                color: 3447003,
+                //color: 3447003,
                 author: {
                     name: "> Help <"
                 },
@@ -58,9 +58,10 @@ Client.on("message", message => {
             }
         });
     } else if (message.content === prefix + "game-players") {
-        message.channel.send({
+        message.channel.send("Hallo!");
+        /*message.channel.send({
             embed: {
-                color: 3447003,
+                //color: 3447003,
                 author: {
                     name: "> Players <"
                 },
@@ -79,7 +80,7 @@ Client.on("message", message => {
                     text: "Not what you're looking for? " + prefix + "help"
                 }
             }
-        });
+        });*/
     } else if (message.content === prefix + "logieboi") {
         message.channel.send(":bear: ***Logie da Bear!*** :bear:");
     } else if (message.content === prefix + "konurpapa") {
