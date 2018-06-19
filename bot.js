@@ -15,7 +15,7 @@ Client.on("message", message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
-    if (message.content === prefix + /ping/i) {
+    if (message.content === prefix + "ping") {
         message.channel.send('Pong!');
   	} else if (message.content === prefix + "help") {
         // I know this isn't especially syntactually good, but it makes it easier to read
@@ -55,8 +55,33 @@ Client.on("message", message => {
                 }
             }
         });
+    } else if (message.content === prefix + "game-players") {
+        let players = message.guild.roles.find("name", "Playing Game").members;
+        
+        message.channel.send({
+            embed: {
+                color: 3447003,
+                author: {
+                    name: "> Players <"
+                },
+                title: "List of the players of the current game",
+                fields: [
+                    {
+                        name: "Users:",
+                        value: players
+                    },
+                    {
+                        name: "Number:",
+                        value: players.size
+                    }
+                ],
+                footer: {
+                    text: "Not what you're looking for? " + prefix + "help"
+                }
+            }
+        });
     } else if (message.content === prefix + "logieboi") {
-        message.channel.send("***Logie da Bear!***");
+        message.channel.send(":bear: ***Logie da Bear!*** :bear:");
     } else if (message.content === prefix + "konurpapa") {
         message.channel.send("_Woot!_");
     }
