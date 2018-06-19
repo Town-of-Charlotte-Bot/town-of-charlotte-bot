@@ -68,7 +68,7 @@ Client.on("message", message => {
                 fields: [
                     {
                         name: "Users",
-                        value: players.members + ""
+                        value: JSON.stringify(players.members)
                     },
                     {
                         name: "Number",
