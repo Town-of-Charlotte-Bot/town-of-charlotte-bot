@@ -57,7 +57,7 @@ Client.on("message", message => {
                 }
             }
         });
-    } else if (message.content === prefix + "game-players") {
+    } if (message.content === prefix + "game-players") {
         message.channel.send({
             embed: {
                 color: 3447003,
