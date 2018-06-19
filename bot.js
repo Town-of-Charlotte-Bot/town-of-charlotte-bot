@@ -91,7 +91,7 @@ client.on("message", message => {
 // When the bot loads
 client.on("ready", () => {
     console.log(`Ready for action! Serving ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} servers.`);
-    client.user.setActivity(`Town of Charlotte ~ ${prefix}`);
+    //client.user.setActivity(`Town of Charlotte ~ ${prefix}`);
 });
 
 // Server joining/leaving
