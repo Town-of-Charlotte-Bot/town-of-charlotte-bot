@@ -29,7 +29,8 @@ Client.on("message", message => {
                 fields: [
                     {
                         name: "General",
-                        value: "`help` - Lists bot commands"
+                        value: "`help` - Lists bot commands\n"
+                            + "`info` - Gives info about the _Town of Charlotte_ game and how to play"
                     },
                     // I know this isn't especially syntactually good, but it makes it easier to read
                     {
@@ -67,7 +68,7 @@ Client.on("message", message => {
                 fields: [
                     {
                         name: "Users:",
-                        value: players
+                        value: "Test"
                     },
                     {
                         name: "Number:",
