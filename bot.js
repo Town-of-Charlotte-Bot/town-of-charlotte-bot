@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const client = new Discord.Client();
-const package = require("./package.json");
-const commands = require("./info/commands.json");
+//const package = require("./package.json");
+//const commands = require("./info/commands.json");
 const prefix = "//";
 /*
 // Load
@@ -95,12 +95,12 @@ client.on("ready", () => {
 });
 
 // Server joining/leaving
-client.on("guildCreate", guild => {
+/*client.on("guildCreate", guild => {
     console.log(`Joined new server: ${guild.name} (id: ${guild.id}). Serving ${guild.memberCount} new members!`);
 });
 client.on("guildDelete", guild => {
     console.log(`Removed from server: ${guild.name} (id: ${guild.id}).`);
-});
+});*/
 
 // When a message is posted
 client.on("message", async message => {
