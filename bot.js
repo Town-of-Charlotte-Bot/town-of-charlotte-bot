@@ -63,26 +63,27 @@ client.on("message", async message => {
                         {
                             name: "General",
                             value: "`help` - Lists bot commands\n"
-                                + "`info` - Gives info about the _Town of Charlotte_ game and how to play"
+                                + "`info` - Gives info about the _Town of Charlotte_ game and how to play\n"
+                                + "`purge x` - Bulk-delete messages, where _x_ is the number of messages to delete"
                         },
                         // I know this isn't especially syntactually good, but it makes it easier to read
                         {
                             name: "Game",
-                            value: "`game-join` - Join the currently initiated game\n"
-                                + "`game-stats` - Show vital-statistics about the current game\n"
-                                + "`game-players` - Lists all players in the current game\n"
-                                + "`players-dead` - Lists the players who are dead in the current game\n"
-                                + "`players-alive` - Lists the players who are alive in the current game"
+                            value: "`game join` - Join the currently initiated game\n"
+                                + "`game stats` - Show vital-statistics about the current game\n"
+                                + "`game players` - Lists all players in the current game\n"
+                                + "`players dead` - Lists the players who are dead in the current game\n"
+                                + "`players alive` - Lists the players who are alive in the current game"
                         },
                         {
                             name: "For Gamemasters",
-                            value: "`game-initiate` - Initiate a new game for players to join\n"
-                                + "`game-start` - Start a new game with the players that have joined\n"
-                                + "`game-end` - End the current game\n"
-                                + "`players-good` - DMs the user a list of all good players in the current game\n"
-                                + "`players-evil` - DMs the user a list of all evil players in the current game\n"
-                                + "`players-neutral` - DMs the user a list of all neutral players in the current game\n"
-                                + "`players-list` - DMs the user a list of all players in the current game and their respective roles"
+                            value: "`game initiate` - Initiate a new game for players to join\n"
+                                + "`game start` - Start a new game with the players that have joined\n"
+                                + "`game end` - End the current game\n"
+                                + "`players good` - DMs the user a list of all good players in the current game\n"
+                                + "`players evil` - DMs the user a list of all evil players in the current game\n"
+                                + "`players neutral` - DMs the user a list of all neutral players in the current game\n"
+                                + "`players list` - DMs the user a list of all players in the current game and their respective roles"
                         }
                     ],
                     footer: {
@@ -131,7 +132,7 @@ client.on("message", async message => {
 
                 const fetched = await message.channel.fetchMessages({limit: deleteCount});
                 message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
-                message.channel.send(`Cleared ${fetched} messages.`);
+                message.channel.send(`_Cleared ${deleteCount} messages._`);
             }
             break;
         case "logieboi":
