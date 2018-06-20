@@ -1,7 +1,7 @@
 {
-    "name": "Test",
-    "description": "Test",
-    "version": "0.0.0",
+    "name": "Town of Charlotte",
+    "description": "Bot for the Town of Charlotte game",
+    "version": "0.1.0",
     "main": "bot.js",
     "scripts": {
         "start": "node bot.js"
@@ -9,6 +9,9 @@
     "dependencies": {
         "discord.js": "11.1.0",
         "request": "2.81.0"
+    },
+    "settings": {
+        "prefix": "//"
     }
 }
 
