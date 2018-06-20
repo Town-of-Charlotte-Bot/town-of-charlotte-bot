@@ -46,7 +46,6 @@ client.on("message", async message => {
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
-    //const playing = message.server.roles.get("name", "Playing Game");
     
     switch (command) {
         case "ping":
@@ -124,7 +123,8 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "purge":
-            if (!admin) return message.reply("You are not authorized to perform this action.");
+            if (!admin) break;
+            if (!message.member.roles.has(admin)) return message.reply("You are not authorized to perform this action.");
             if (message.member.roles.has(admin)) {
                 const deleteCount = parseInt(args[0], 10);
 
