@@ -8,7 +8,7 @@ const Discord = require("discord.js");
 const client = new Discord.Client();
 const package = require("./package.json");
 const commands = require("./info/commands.json");
-const prefix = commands.settings.prefix;
+const prefix = commands.prefix;
 
 // I thought about reading/writing to/from a JSON file, but this is easier
 var players = [
@@ -172,11 +172,12 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "purge":
-            if (!message.member.roles.some(r=>["Gamemaster"].includes(r.name))) return message.reply("You are not authorized to perform this action.");
-            if (message.member.roles.some(r=>["Gamemaster"].includes(r.name))) {
+            var role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
+            if (!role) return message.reply("You are not authorized to perform this action.");
+            if (role) {
                 const deleteCount = parseInt(args[0], 10);
 
-                if (!deleteCount) return message.reply("Please provide the number of messages to purge.");
+                if (!deleteCount) return message.reply("Please provide the number of messages to delete.");
                 else if (deleteCount < 2 || deleteCount > 100) return message.reply("The number you provided is either too small or too large.");
 
                 const fetched = await message.channel.fetchMessages({limit: deleteCount});
