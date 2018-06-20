@@ -122,7 +122,6 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "purge":
-            if (!admin) break;
             if (!message.member.roles.some(r=>["Gamemaster"].includes(r.name))) return message.reply("You are not authorized to perform this action.");
             if (message.member.roles.some(r=>["Gamemaster"].includes(r.name))) {
                 const deleteCount = parseInt(args[0], 10);
