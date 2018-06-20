@@ -8,7 +8,7 @@ const Discord = require("discord.js");
 const client = new Discord.Client();
 const package = require("./package.json");
 const commands = require("./info/commands.json");
-const prefix = "//";
+const prefix = commands.prefix;
 
 // I thought about reading/writing to/from a JSON file, but this is easier
 var players = [
@@ -64,20 +64,21 @@ client.on("message", async message => {
                             name: "General",
                             value: "`help` - Lists bot commands\n"
                                 + "`ping` - Ping the bot, and receive a latency check.\n"
-                                + "`info` - Gives info about the _Town of Charlotte_ game and how to play\n"
-                                + "`purge x` - Bulk-delete messages, where _x_ is the number of messages to delete"
+                                + "`info` - Gives info about the _Town of Charlotte_ game and how to play"
                         },
                         {
-                            name: "Game",
+                            name: "In-Game",
                             value: "`game join` - Join the currently initiated game\n"
                                 + "`game stats` - Show vital-statistics about the current game\n"
                                 + "`game players` - Lists all players in the current game\n"
+                                + "`game role` - DMs the user their role and abilities in the current game\n"
                                 + "`players dead` - Lists the players who are dead in the current game\n"
                                 + "`players alive` - Lists the players who are alive in the current game"
                         },
                         {
                             name: "For Gamemasters",
-                            value: "`game initiate` - Initiate a new game for players to join\n"
+                            value: "`purge x` - Bulk-delete messages, where _x_ is the number of messages to delete\n"
+                                + "`game initiate` - Initiate a new game for players to join\n"
                                 + "`game start` - Start a new game with the players that have joined\n"
                                 + "`game end` - End the current game\n"
                                 + "`players good` - DMs the user a list of all good players in the current game\n"
@@ -92,13 +93,61 @@ client.on("message", async message => {
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
-        case "game players":
-            let player = message.guild.roles.find("name", "Playing Game");
+        case "info":
+            message.channel.send({
+                embed: {
+                    //color: 3447003,
+                    author: {
+                        name: "> Game Info <"
+                    },
+                    title: "How to play the Town of Charlotte game",
+                    fields: [
+                        {
+                            name: "Starting a game",
+                            value: "Some info"
+                        },
+                        {
+                            name: "Number",
+                            value: "Test2"
+                        }
+                    ],
+                    footer: {
+                        text: "Not what you're looking for? " + prefix + "help"
+                    }
+                }
+            }).catch(error => message.reply(`Failed to perform action: ${error}`));
+            break;
+        case "game":
+            /*let player = message.guild.roles.find("name", "Playing Game");
             console.log(`Got ${player.size} members with that role:\n${JSON.stringify(player)}`);
             
             const guildNames = client.guilds.map(g => g.name).join("\n");
-            console.log(guildNames);
+            console.log(guildNames);*/
             
+            message.channel.send({
+                embed: {
+                    //color: 3447003,
+                    author: {
+                        name: "> Players <"
+                    },
+                    title: "List of players in the current game",
+                    fields: [
+                        {
+                            name: "Users",
+                            value: "Test1"
+                        },
+                        {
+                            name: "Number",
+                            value: "Test2"
+                        }
+                    ],
+                    footer: {
+                        text: "Not what you're looking for? " + prefix + "help"
+                    }
+                }
+            }).catch(error => message.reply(`Failed to perform action: ${error}`));
+            break;
+        case "players":
             message.channel.send({
                 embed: {
                     //color: 3447003,
