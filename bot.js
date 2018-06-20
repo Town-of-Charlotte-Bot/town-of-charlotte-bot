@@ -3,11 +3,27 @@
     https://gist.github.com/eslachance/3349734a98d30011bb202f47342601d3
 */
 
+// What we need up-front
 const Discord = require("discord.js");
 const client = new Discord.Client();
 const package = require("./package.json");
 const commands = require("./info/commands.json");
 const prefix = "//";
+
+// I thought about reading/writing to/from a JSON file, but this is easier
+var players = [
+    // This first state is an example. It is deleted at runtime.
+    {
+        name: "KonurPapa#8843",
+        state: "alive",
+        type: "good",
+        role: "Jailor"
+    }
+];
+console.log(players[0]);
+
+// See, I told you it was deleted
+players = [];
 
 // When the bot loads
 client.on("ready", () => {
@@ -74,15 +90,15 @@ client.on("message", async message => {
                         text: "Command Prefix: " + prefix
                     }
                 }
-            });
+            }).catch(error => message.reply(`Failed to perform action: ${error}`);
             break;
         case "game-players":
-            let players = message.guild.roles.find("name", "Playing Game");
-            console.log(`Got ${players.size} members with that role:\n${JSON.stringify(players)}`);
-
+            let player = message.guild.roles.find("name", "Playing Game");
+            console.log(`Got ${player.size} members with that role:\n${JSON.stringify(player)}`);
+            
             const guildNames = client.guilds.map(g => g.name).join("\n");
             console.log(guildNames);
-
+            
             message.channel.send({
                 embed: {
                     //color: 3447003,
@@ -104,7 +120,7 @@ client.on("message", async message => {
                         text: "Not what you're looking for? " + prefix + "help"
                     }
                 }
-            });
+            }).catch(error => message.reply(`Failed to perform action: ${error}`);
             break;
         case "purge":
             const deleteCount = parseInt(args[0], 10);
