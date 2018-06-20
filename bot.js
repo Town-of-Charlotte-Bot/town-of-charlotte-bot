@@ -13,19 +13,20 @@ const prefix = package.settings.prefix;
 // Database of all characters
 var characters = {
     good: {
-        /* Example of entries
         jailor: {
-            user: "KonurPapa#8843",
+            user: "",
             state: "alive",
-            explanation: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
-            ability: [],
+            explainTxt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
+            abilities: {
+                block: [Infinity, "You were locked up by the Jailor!"],
+                kill: [1, "You were executed by the Jailor!"]
+            },
             immunity: {
                 night: false,
                 bite: false,
                 detect: false
             }
         }
-        */
     },
     evil: {
         
@@ -37,6 +38,9 @@ var characters = {
 // List of players in the game
 var currentPlayers = [];
 var oldPlayers = [];
+
+// Boolean that triggers if a game is available for joining
+var gameNow = false;
 
 // When the bot loads
 client.on("ready", () => {
@@ -60,12 +64,11 @@ client.on("message", async message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
+    // Get the Gamemaster role
+    const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
+    
     // All our commands
     switch (command) {
-        case "ping":
-            const temp = await message.channel.send("Pinging...");
-            temp.edit(`Pong! Latency is ${temp.createdTimestamp - message.createdTimestamp}ms.`);
-            break;
         case "help":
             message.channel.send({
                 embed: {
@@ -92,13 +95,10 @@ client.on("message", async message => {
                         },
                         {
                             name: "For Gamemasters",
-                            value: "`purge x` - Bulk-delete messages, where _x_ is the number of messages to delete\n"
-                                + "`game initiate` - Initiate a new game for players to join\n"
-                                + "`game start` - Start a new game with the players that have joined\n"
+                            value: "`delete x` - Bulk-delete messages, where _x_ is the number of messages to delete\n"
+                                + "`game start` - Start a new game for players to join\n"
+                                + "`game begin` - Begin the game with the players that have joined\n"
                                 + "`game end` - End the current game\n"
-                                + "`players good` - DMs the user a list of all good players in the current game\n"
-                                + "`players evil` - DMs the user a list of all evil players in the current game\n"
-                                + "`players neutral` - DMs the user a list of all neutral players in the current game\n"
                                 + "`players list` - DMs the user a list of all players in the current game and their respective roles"
                         }
                     ],
@@ -107,6 +107,10 @@ client.on("message", async message => {
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
+            break;
+        case "ping":
+            const temp = await message.channel.send("Pinging...");
+            temp.edit(`Pong! Latency is ${temp.createdTimestamp - message.createdTimestamp}ms.`);
             break;
         case "info":
             message.channel.send({
@@ -118,12 +122,16 @@ client.on("message", async message => {
                     title: "How to play the Town of Charlotte game",
                     fields: [
                         {
-                            name: "Starting a game",
-                            value: "Some info"
+                            name: "Goal",
+                            value: "Info"
                         },
                         {
-                            name: "Number",
-                            value: "Test2"
+                            name: "Starting a game",
+                            value: "More info"
+                        },
+                        {
+                            name: "During the game",
+                            value: "Even more info"
                         }
                     ],
                     footer: {
@@ -139,7 +147,15 @@ client.on("message", async message => {
             const guildNames = client.guilds.map(g => g.name).join("\n");
             console.log(guildNames);*/
             
-            message.channel.send({
+            if (args[0] === "start") {
+                if (!role) return message.reply("You are not authorized to perform this action.");
+                if (role) {
+
+                }
+            }
+            
+            // game players command
+            /*message.channel.send({
                 embed: {
                     //color: 3447003,
                     author: {
@@ -160,7 +176,7 @@ client.on("message", async message => {
                         text: "Not what you're looking for? " + prefix + "help"
                     }
                 }
-            }).catch(error => message.reply(`Failed to perform action: ${error}`));
+            }).catch(error => message.reply(`Failed to perform action: ${error}`));*/
             break;
         case "players":
             message.channel.send({
@@ -186,11 +202,10 @@ client.on("message", async message => {
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
-        case "purge":
-            var role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
+        case "delete":
             if (!role) return message.reply("You are not authorized to perform this action.");
             if (role) {
-                const deleteCount = parseInt(args[0], 10);
+                const deleteCount = Number(args[0]);
 
                 if (!deleteCount) return message.reply("Please provide the number of messages to delete.");
                 else if (deleteCount < 2 || deleteCount > 100) return message.reply("The number you provided is either too small or too large.");
