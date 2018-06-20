@@ -90,7 +90,7 @@ client.on("message", async message => {
                         text: "Command Prefix: " + prefix
                     }
                 }
-            }).catch(error => message.reply(`Failed to perform action: ${error}`);
+            }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "game-players":
             let player = message.guild.roles.find("name", "Playing Game");
@@ -120,7 +120,7 @@ client.on("message", async message => {
                         text: "Not what you're looking for? " + prefix + "help"
                     }
                 }
-            }).catch(error => message.reply(`Failed to perform action: ${error}`);
+            }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "purge":
             const deleteCount = parseInt(args[0], 10);
