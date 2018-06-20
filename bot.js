@@ -11,7 +11,7 @@ const commands = require("./info/commands.json");
 const prefix = package.settings.prefix;
 
 // I thought about reading/writing to/from a JSON file, but this is easier
-var players = [
+var players = {
     good: {
         
     },
@@ -27,7 +27,7 @@ var players = [
         type: "good",
         role: "Jailor"
     }*/
-];
+};
 
 // When the bot loads
 client.on("ready", () => {
