@@ -44,7 +44,8 @@ var gameNow = false;
 
 // When the bot loads
 client.on("ready", () => {
-    console.log(`Ready for action! Serving ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} servers.`);
+    console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
+    client.user.setActivity({game: {name: "with fire", type: 0}});
 });
 
 // Server joining/leaving
@@ -65,7 +66,7 @@ client.on("message", async message => {
     const command = args.shift().toLowerCase();
     
     // Check if the user has the Gamemaster role
-    const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
+    const role = message.author.roles.some(r=>["Gamemaster"].includes(r.name));
     
     // All our commands
     switch (command) {
@@ -141,14 +142,13 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "game":
-            // I may need some of this later...
-            /*let player = message.guild.roles.find("name", "Playing Game");
-            console.log(`Got ${player.size} members with that role.`);*/
-            
             switch (args[0]) {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
-                    if (gameNow) message.reply("_you have joined the game._");
+                    if (gameNow) {
+                        currentPlayers.push(message.author);
+                        message.reply("_you have joined the game._");
+                    }
                     break;
                 case "start":
                     if (!role) message.reply("You are not authorized to perform this action.");
