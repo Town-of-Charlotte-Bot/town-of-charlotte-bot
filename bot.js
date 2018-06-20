@@ -8,7 +8,7 @@ const Discord = require("discord.js");
 const client = new Discord.Client();
 const package = require("./package.json");
 const commands = require("./info/commands.json");
-const prefix = commands.prefix;
+const prefix = JSON.parse(commands.prefix);
 
 // I thought about reading/writing to/from a JSON file, but this is easier
 var players = [
