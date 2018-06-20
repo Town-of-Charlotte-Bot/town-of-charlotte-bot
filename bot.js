@@ -63,10 +63,10 @@ client.on("message", async message => {
                         {
                             name: "General",
                             value: "`help` - Lists bot commands\n"
+                                + "`ping` - Ping the bot, and receive a latency check.\n"
                                 + "`info` - Gives info about the _Town of Charlotte_ game and how to play\n"
                                 + "`purge x` - Bulk-delete messages, where _x_ is the number of messages to delete"
                         },
-                        // I know this isn't especially syntactually good, but it makes it easier to read
                         {
                             name: "Game",
                             value: "`game join` - Join the currently initiated game\n"
@@ -92,7 +92,7 @@ client.on("message", async message => {
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
-        case "game-players":
+        case "game players":
             let player = message.guild.roles.find("name", "Playing Game");
             console.log(`Got ${player.size} members with that role:\n${JSON.stringify(player)}`);
             
@@ -128,11 +128,11 @@ client.on("message", async message => {
                 const deleteCount = parseInt(args[0], 10);
 
                 if (!deleteCount) return message.reply("Please provide the number of messages to purge.");
-                else if (deleteCount < 1 || deleteCount > 100) return message.reply("The number you provided is either too small or too large.");
+                else if (deleteCount < 2 || deleteCount > 100) return message.reply("The number you provided is either too small or too large.");
 
                 const fetched = await message.channel.fetchMessages({limit: deleteCount});
                 message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
-                message.channel.send(`_Cleared ${deleteCount} messages._`);
+                message.reply(`_Cleared ${deleteCount} messages._`);
             }
             break;
         case "logieboi":
