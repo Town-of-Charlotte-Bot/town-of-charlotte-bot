@@ -125,7 +125,7 @@ client.on("message", async message => {
             break;
         case "purge":
             if (!admin) return message.reply("You are not authorized to perform this action.");
-            if (client.userHasRole(message.author, admin)) {
+            if (message.member.roles.has(admin)) {
                 const deleteCount = parseInt(args[0], 10);
 
                 if (!deleteCount) return message.reply("Please provide the number of messages to purge.");
