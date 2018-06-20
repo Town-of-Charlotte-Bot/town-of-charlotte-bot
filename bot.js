@@ -42,7 +42,6 @@ client.on("guildDelete", guild => {
 client.on("message", async message => {
     if (message.author.bot) return;
     if (message.content.indexOf(prefix) !== 0) return;
-    let admin = message.guild.roles.find("name", "Gamemaster");
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
@@ -124,8 +123,8 @@ client.on("message", async message => {
             break;
         case "purge":
             if (!admin) break;
-            if (!message.member.roles.has(admin)) return message.reply("You are not authorized to perform this action.");
-            if (message.member.roles.has(admin)) {
+            if (!message.member.roles.some(r=>["Gamemaster"].includes(r.name))) return message.reply("You are not authorized to perform this action.");
+            if (message.member.roles.some(r=>["Gamemaster"].includes(r.name))) {
                 const deleteCount = parseInt(args[0], 10);
 
                 if (!deleteCount) return message.reply("Please provide the number of messages to purge.");
