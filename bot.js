@@ -64,7 +64,7 @@ client.on("message", async message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
-    // Get the Gamemaster role
+    // Check if the user has the Gamemaster role
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     
     // All our commands
@@ -150,7 +150,7 @@ client.on("message", async message => {
             if (args[0] === "start") {
                 if (!role) return message.reply("You are not authorized to perform this action.");
                 if (role) {
-
+                    message.reply("Works");
                 }
             }
             
