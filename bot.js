@@ -131,6 +131,7 @@ client.on("message", async message => {
 
                 const fetched = await message.channel.fetchMessages({limit: deleteCount});
                 message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
+                message.channel.send(`Cleared ${fetched} messages.`);
             }
             break;
         case "logieboi":
