@@ -89,7 +89,7 @@ client.on("message", async message => {
                             value: "`game join` - Join the currently initiated game\n"
                                 + "`game stats` - Show vital-statistics about the current game\n"
                                 + "`game players` - Lists all players in the current game\n"
-                                + "`game role` - DMs the user their role and abilities in the current game\n"
+                                + "`game roles` - Lists all roles\n"
                                 + "`players dead` - Lists the players who are dead in the current game\n"
                                 + "`players alive` - Lists the players who are alive in the current game"
                         },
@@ -143,33 +143,44 @@ client.on("message", async message => {
         case "game":
             // I may need some of this later...
             /*let player = message.guild.roles.find("name", "Playing Game");
-            console.log(`Got ${player.size} members with that role:\n${JSON.stringify(player)}`);
+            console.log(`Got ${player.size} members with that role.`);*/
             
-            const guildNames = client.guilds.map(g => g.name).join("\n");
-            console.log(guildNames);*/
-            
-            if (args[0] === "start") {
-                if (!role) message.reply("You are not authorized to perform this action.");
-                if (role) {
-                    gameNow = true;
-                    message.channel.send({
-                        embed: {
-                            //color: 3447003,
-                            author: {
-                                name: "> Game Started <"
-                            },
-                            fields: [
-                                {
-                                    name: "A new Town of Charlotte game has just been started.",
-                                    value: "To join the game, type `" + prefix + "game join` and you will be DMed your character."
+            switch (args[0]) {
+                case "join":
+                    if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
+                    if (gameNow) message.reply("_you have joined the game._");
+                    break;
+                case "start":
+                    if (!role) message.reply("You are not authorized to perform this action.");
+                    if (role) {
+                        gameNow = true;
+                        message.channel.send({
+                            embed: {
+                                //color: 3447003,
+                                author: {
+                                    name: "> Game Started <"
+                                },
+                                fields: [
+                                    {
+                                        name: "A new Town of Charlotte game has just been started.",
+                                        value: "To join the game, type `" + prefix + "game join` and you will be DMed your role."
+                                    }
+                                ],
+                                footer: {
+                                    text: "Need help? " + prefix + "help"
                                 }
-                            ],
-                            footer: {
-                                text: "Need help? " + prefix + "help"
                             }
-                        }
-                    }).catch(error => message.reply(`Failed to perform action: ${error}`));
-                }
+                        }).catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
+                    break;
+                case "end":
+                    if (!role) message.reply("You are not authorized to perform this action.");
+                    if (role && !gameNow) message.reply("There is no current game to end.");
+                    if (role && gameNow) {
+                        gameNow = false;
+                        message.channel.send("The current game has been ended.").catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
+                    break;
             }
             
             // game players command
