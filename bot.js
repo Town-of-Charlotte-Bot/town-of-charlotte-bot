@@ -12,23 +12,26 @@ const prefix = package.settings.prefix;
 
 // I thought about reading/writing to/from a JSON file, but this is easier
 var players = [
-    // This first state is an example. It is deleted at runtime.
-    {
+    good: {
+        
+    },
+    evil: {
+        
+    },
+    neutral: {
+        
+    }
+    /*{
         name: "KonurPapa#8843",
         state: "alive",
         type: "good",
         role: "Jailor"
-    }
+    }*/
 ];
-console.log(players[0]);
-
-// See, I told you it was deleted
-players = [];
 
 // When the bot loads
 client.on("ready", () => {
     console.log(`Ready for action! Serving ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} servers.`);
-    console.log(prefix);
 });
 
 // Server joining/leaving
@@ -183,6 +186,7 @@ client.on("message", async message => {
 
                 const fetched = await message.channel.fetchMessages({limit: deleteCount});
                 message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
+                console.log(`${message.member} cleared ${deleteCount} messages in ${message.channel}.`);
                 message.reply(`_Cleared ${deleteCount} messages._`);
             }
             break;
