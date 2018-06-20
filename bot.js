@@ -28,6 +28,7 @@ players = [];
 // When the bot loads
 client.on("ready", () => {
     console.log(`Ready for action! Serving ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} servers.`);
+    console.log(prefix);
 });
 
 // Server joining/leaving
