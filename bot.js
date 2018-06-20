@@ -42,6 +42,7 @@ client.on("guildDelete", guild => {
 client.on("message", async message => {
     if (message.author.bot) return;
     if (message.content.indexOf(prefix) !== 0) return;
+    let admin = message.server.roles.get("name", "Gamemaster");
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
@@ -123,13 +124,16 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "purge":
-            const deleteCount = parseInt(args[0], 10);
-            
-            if (!deleteCount) return message.reply("Please provide the number of messages to purge.");
-            else if (deleteCount < 1 || deleteCount > 100) return message.reply("The number you provided is either too small or too large.");
-            
-            const fetched = await message.channel.fetchMessages({limit: deleteCount});
-            message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
+            if (!admin) return message.reply("You are not authorized to perform this action.");
+            if (client.userHasRole(message.author, admin)) {
+                const deleteCount = parseInt(args[0], 10);
+
+                if (!deleteCount) return message.reply("Please provide the number of messages to purge.");
+                else if (deleteCount < 1 || deleteCount > 100) return message.reply("The number you provided is either too small or too large.");
+
+                const fetched = await message.channel.fetchMessages({limit: deleteCount});
+                message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
+            }
             break;
         case "logieboi":
             message.channel.send(":bear: ***Logie da Bear!*** :bear:");
