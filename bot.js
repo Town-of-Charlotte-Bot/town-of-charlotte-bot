@@ -141,6 +141,7 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "game":
+            // I may need some of this later...
             /*let player = message.guild.roles.find("name", "Playing Game");
             console.log(`Got ${player.size} members with that role:\n${JSON.stringify(player)}`);
             
@@ -148,9 +149,26 @@ client.on("message", async message => {
             console.log(guildNames);*/
             
             if (args[0] === "start") {
-                if (!role) return message.reply("You are not authorized to perform this action.");
+                if (!role) message.reply("You are not authorized to perform this action.");
                 if (role) {
-                    message.reply("Works");
+                    gameNow = true;
+                    message.channel.send({
+                        embed: {
+                            //color: 3447003,
+                            author: {
+                                name: "> Game Started <"
+                            },
+                            fields: [
+                                {
+                                    name: "A new Town of Charlotte game has just been started.",
+                                    value: "To join the game, type `" + prefix + "game join` and you will be DMed your character."
+                                }
+                            ],
+                            footer: {
+                                text: "Need help? " + prefix + "help"
+                            }
+                        }
+                    }).catch(error => message.reply(`Failed to perform action: ${error}`));
                 }
             }
             
@@ -203,12 +221,12 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "delete":
-            if (!role) return message.reply("You are not authorized to perform this action.");
+            if (!role) message.reply("You are not authorized to perform this action.");
             if (role) {
                 const deleteCount = Number(args[0]);
 
-                if (!deleteCount) return message.reply("Please provide the number of messages to delete.");
-                else if (deleteCount < 2 || deleteCount > 100) return message.reply("The number you provided is either too small or too large.");
+                if (!deleteCount) message.reply("Please provide the number of messages to delete.");
+                else if (deleteCount < 2 || deleteCount > 100) message.reply("The number you provided is either too small or too large.");
 
                 const fetched = await message.channel.fetchMessages({limit: deleteCount});
                 message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
