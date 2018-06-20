@@ -113,9 +113,8 @@ client.on("message", async message => {
     
     switch (command) {
         case "ping":
-            const temp = await message.channel.send("Pinging...");
-            
             client.startTyping(message.channel);
+            const temp = await message.channel.send("Pinging...");
             temp.edit(`Pong! ${temp.createdTimestamp - message.createdTimestamp}ms.`);
             break;
         case "help":
