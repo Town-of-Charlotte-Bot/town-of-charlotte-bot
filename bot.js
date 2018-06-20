@@ -10,10 +10,22 @@ const package = require("./package.json");
 const commands = require("./info/commands.json");
 const prefix = package.settings.prefix;
 
-// I thought about reading/writing to/from a JSON file, but this is easier
-var players = {
+// Database of all characters
+var characters = {
     good: {
-        
+        /* Example of entries
+        jailor: {
+            user: "KonurPapa#8843",
+            state: "alive",
+            explanation: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
+            ability: [],
+            immunity: {
+                night: false,
+                bite: false,
+                detect: false
+            }
+        }
+        */
     },
     evil: {
         
@@ -21,13 +33,10 @@ var players = {
     neutral: {
         
     }
-    /*{
-        name: "KonurPapa#8843",
-        state: "alive",
-        type: "good",
-        role: "Jailor"
-    }*/
 };
+// List of players in the game
+var currentPlayers = [];
+var oldPlayers = [];
 
 // When the bot loads
 client.on("ready", () => {
@@ -47,13 +56,15 @@ client.on("message", async message => {
     if (message.author.bot) return;
     if (message.content.indexOf(prefix) !== 0) return;
     
+    // Simple code that helps us separate the command from its arguments
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
+    // All our commands
     switch (command) {
         case "ping":
             const temp = await message.channel.send("Pinging...");
-            temp.edit(`Pong! ${temp.createdTimestamp - message.createdTimestamp}ms.`);
+            temp.edit(`Pong! Latency is ${temp.createdTimestamp - message.createdTimestamp}ms.`);
             break;
         case "help":
             message.channel.send({
