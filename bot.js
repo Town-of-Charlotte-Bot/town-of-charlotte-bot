@@ -10,8 +10,13 @@ const package = require("./package.json");
 const commands = require("./info/commands.json");
 const prefix = package.settings.prefix;
 
-// Database of all characters
-var characters = {
+// Store internal game data
+var game = {
+    day: 0
+};
+
+// Database of all roles
+var roles = {
     good: {
         jailor: {
             user: "",
@@ -35,12 +40,15 @@ var characters = {
         
     }
 };
+
 // List of players in the game
 var currentPlayers = [];
 var oldPlayers = [];
 
 // Boolean that triggers if a game is available for joining
 var gameNow = false;
+// Boolean that triggers if a game is being played
+var playing  = false;
 
 // When the bot loads
 client.on("ready", () => {
@@ -109,7 +117,7 @@ client.on("message", async message => {
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
         case "ping":
-            const temp = await message.channel.send("Pinging...");
+            const temp = await message.channel.send("Pinging...").catch(error => message.reply(`Failed to perform action: ${error}`));
             temp.edit(`Pong! Latency is ${temp.createdTimestamp - message.createdTimestamp}ms.`);
             break;
         case "info":
@@ -147,35 +155,39 @@ client.on("message", async message => {
                     if (gameNow) {
                         currentPlayers.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
-                        message.author.send("You are now in the game!");
+                        message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
                 case "players":
-                    message.channel.send({
-                        embed: {
-                            //color: 3447003,
-                            author: {
-                                name: "> Players <"
-                            },
-                            title: "List of players in the current game",
-                            fields: [
-                                {
-                                    name: "Users",
-                                    value: currentPlayers.join("\n")
+                    if (!gameNow && !playing) message.reply("There is no game in progress.");
+                    if (gameNow || playing) {
+                        message.channel.send({
+                            embed: {
+                                //color: 3447003,
+                                author: {
+                                    name: "> Players <"
                                 },
-                                {
-                                    name: "Number",
-                                    value: currentPlayers.length
+                                title: "List of players in the current game",
+                                fields: [
+                                    {
+                                        name: "Users",
+                                        value: currentPlayers.join("\n")
+                                    },
+                                    {
+                                        name: "Number",
+                                        value: currentPlayers.length
+                                    }
+                                ],
+                                footer: {
+                                    text: "Not what you're looking for? " + prefix + "help"
                                 }
-                            ],
-                            footer: {
-                                text: "Not what you're looking for? " + prefix + "help"
                             }
-                        }
-                    }).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        }).catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
                     break;
                 case "start":
                     if (!role) message.reply("You are not authorized to perform this action.");
+                    if (role && (gameNow || playing)) message.reply("There is already a game in progress.");
                     if (role) {
                         gameNow = true;
                         message.channel.send({
@@ -199,12 +211,38 @@ client.on("message", async message => {
                     break;
                 case "end":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && !gameNow) message.reply("There is no current game to end.");
-                    if (role && gameNow) {
-                        gameNow = false;
+                    if (role && (gameNow || !playing)) message.reply("There is no current game to end.");
+                    if (role && !gameNow && playing) {
+                        playing = false;
+                        currentPlayers = [];
+                        game.day = 0;
                         message.channel.send("The current game has been ended.").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
+                case "begin":
+                    if (!role) message.reply("You are not authorized to perform this action.");
+                    if (role && !gameNow) message.reply("There is no current game to begin.");
+                    if (role && gameNow) {
+                        gameNow = false;
+                        playing = true;
+                        message.channel.send({
+                            embed: {
+                                //color: 3447003,
+                                author: {
+                                    name: "> Game Has Begun <"
+                                },
+                                fields: [
+                                    {
+                                        name: "The game is afoot!",
+                                        value: "No more players may join. The game will now begin!"
+                                    }
+                                ],
+                                footer: {
+                                    text: "Need help? " + prefix + "help"
+                                }
+                            }
+                        }).catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
             }
             break;
         case "players":
