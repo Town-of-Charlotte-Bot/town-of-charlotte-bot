@@ -96,7 +96,8 @@ client.on("message", async message => {
                         },
                         {
                             name: "In-Game",
-                            value: "`game join` - Join the currently initiated game\n"
+                            value: "`game join` - Join the started game\n"
+                                + "`game leave` - Leave the current game\n"
                                 + "`game stats` - Show vital-statistics about the current game\n"
                                 + "`game players` - Lists all players in the current game\n"
                                 + "`game roles` - Lists all roles\n"
