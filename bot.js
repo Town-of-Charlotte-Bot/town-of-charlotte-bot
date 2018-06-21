@@ -152,6 +152,7 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
+                    console.log((message.member + ",").test(currentPlayers.join(",")));
                     if (gameNow && !((message.member + ",").test(currentPlayers.join(",")))) {
                         currentPlayers.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
@@ -211,7 +212,7 @@ client.on("message", async message => {
                     break;
                 case "end":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
+                    if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then it may be ended.");
                     if (role && !gameNow && playing) {
                         playing = false;
                         currentPlayers = [];
@@ -288,6 +289,13 @@ client.on("message", async message => {
             break;
         case "konurpapa":
             message.channel.send("_Woot!_");
+    }
+    if (message.content.startsWith(prefix + "run")) {
+        if (!role) message.reply("You are not authorized to perform this action.");
+        if (role) {
+            var content = message.content.substr(5);
+            return eval(content);
+        }
     }
 });
 
