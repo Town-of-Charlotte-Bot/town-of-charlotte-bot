@@ -65,7 +65,7 @@ client.on("message", async message => {
     const command = args.shift().toLowerCase();
     
     // Check if the user has the Gamemaster role
-    const role = message.members.roles.some(r=>["Gamemaster"].includes(r.name));
+    const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     
     // All our commands
     switch (command) {
