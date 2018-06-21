@@ -147,7 +147,32 @@ client.on("message", async message => {
                     if (gameNow) {
                         currentPlayers.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
+                        message.author.send("You are now in the game!");
                     }
+                    break;
+                case "players":
+                    message.channel.send({
+                        embed: {
+                            //color: 3447003,
+                            author: {
+                                name: "> Players <"
+                            },
+                            title: "List of players in the current game",
+                            fields: [
+                                {
+                                    name: "Users",
+                                    value: currentPlayers.join("\n")
+                                },
+                                {
+                                    name: "Number",
+                                    value: currentPlayers.length
+                                }
+                            ],
+                            footer: {
+                                text: "Not what you're looking for? " + prefix + "help"
+                            }
+                        }
+                    }).catch(error => message.reply(`Failed to perform action: ${error}`));
                     break;
                 case "start":
                     if (!role) message.reply("You are not authorized to perform this action.");
@@ -181,30 +206,6 @@ client.on("message", async message => {
                     }
                     break;
             }
-            
-            // game players command
-            /*message.channel.send({
-                embed: {
-                    //color: 3447003,
-                    author: {
-                        name: "> Players <"
-                    },
-                    title: "List of players in the current game",
-                    fields: [
-                        {
-                            name: "Users",
-                            value: "Test1"
-                        },
-                        {
-                            name: "Number",
-                            value: "Test2"
-                        }
-                    ],
-                    footer: {
-                        text: "Not what you're looking for? " + prefix + "help"
-                    }
-                }
-            }).catch(error => message.reply(`Failed to perform action: ${error}`));*/
             break;
         case "players":
             message.channel.send({
