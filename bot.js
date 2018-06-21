@@ -108,6 +108,11 @@ client.on("message", async message => {
                                 + "`game begin` - Begin the game with the players that have joined\n"
                                 + "`game end` - End the current game\n"
                                 + "`players list` - DMs the user a list of all players in the current game and their respective roles"
+                        },
+                        {
+                            name: "Dev Tools",
+                            value: "`run` - Run any proceeding code\n"
+                                + "`print` - Print the output of any following code"
                         }
                     ],
                     footer: {
@@ -153,7 +158,7 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     console.log(currentPlayers.join().indexOf(message.member));
-                    if (gameNow && !currentPlayers.join().indexOf(message.member)) {
+                    if (gameNow && currentPlayers.join().indexOf(message.member) === -1) {
                         currentPlayers.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
                         message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
