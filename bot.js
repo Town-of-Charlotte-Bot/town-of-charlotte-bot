@@ -100,9 +100,7 @@ client.on("message", async message => {
                                 + "`game leave` - Leave the current game\n"
                                 + "`game stats` - Show vital-statistics about the current game\n"
                                 + "`game players` - Lists all players in the current game\n"
-                                + "`game roles` - Lists all roles\n"
-                                + "`players dead` - Lists the players who are dead in the current game\n"
-                                + "`players alive` - Lists the players who are alive in the current game"
+                                + "`game roles` - Lists all roles"
                         },
                         {
                             name: "For Gamemasters",
