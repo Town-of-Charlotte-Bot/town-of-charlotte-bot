@@ -152,7 +152,7 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
-                    else if (gameNow && !((message.member + ",").test(currentPlayers.join(",")))) {
+                    if (gameNow && !((message.member + ",").test(currentPlayers.join(",")))) {
                         currentPlayers.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
                         message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -160,7 +160,7 @@ client.on("message", async message => {
                     break;
                 case "players":
                     if ((!gameNow && !playing) || currentPlayers.length < 1) message.reply("There are no players to show. Either a game has not been started, or there are no players yet in the current game.");
-                    if (gameNow || playing) {
+                    else if (gameNow || playing) {
                         message.channel.send({
                             embed: {
                                 //color: 3447003,
