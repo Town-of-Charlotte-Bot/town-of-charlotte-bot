@@ -72,8 +72,10 @@ client.on("message", async message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
-    // Check if the user has the Gamemaster role
+    // Check if the user has the Gamemaster role (AKA privileges)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
+    // Convert the array of players into a string, and check if the user is one of them
+    const playerIndex = currentPlayers.join().indexOf(message.member);
     
     // All our commands
     switch (command) {
@@ -111,8 +113,8 @@ client.on("message", async message => {
                         },
                         {
                             name: "Dev Tools",
-                            value: "`run` - Run any proceeding code\n"
-                                + "`print` - Print the output of any following code"
+                            value: "`run x` - Run the proceeding code, where _x_ is the code to run\n"
+                                + "`print x` - Print the output of the proceeding code, where _x_ is the code to run"
                         }
                     ],
                     footer: {
@@ -157,11 +159,20 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
-                    console.log(currentPlayers.join().indexOf(message.member));
-                    if (gameNow && currentPlayers.join().indexOf(message.member) === -1) {
+                    if (gameNow && playerIndex === -1) {
                         currentPlayers.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
                         message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
+                    if (gameNow && playerIndex !== -1) {
+                        message.reply("You have already joined the game.");
+                    }
+                    break;
+                case "leave":
+                    if (!gameNow || !playing || playerIndex === -1) message.reply("There is no game to leave. Either a game has not been started, or you have not joined the current game.");
+                    if ((gameNow || playing) && playerIndex !== -1) {
+                        currentPlayers.splice(playerIndex, 1);
+                        message.channel.send("_" + message.author + " has left the game._").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
                 case "players":
