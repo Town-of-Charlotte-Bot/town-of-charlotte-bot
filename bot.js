@@ -145,7 +145,7 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow) {
-                        currentPlayers.push(message.author);
+                        currentPlayers.push(message.member);
                         message.channel.send(`_${user} has joined the game._`);
                     }
                     break;
