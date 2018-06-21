@@ -91,7 +91,7 @@ client.on("message", async message => {
                         {
                             name: "General",
                             value: "`help` - Lists bot commands\n"
-                                + "`ping` - Ping the bot, and receive a latency check.\n"
+                                + "`ping` - Ping the bot, and receive a latency check\n"
                                 + "`info` - Gives info about the _Town of Charlotte_ game and how to play"
                         },
                         {
@@ -170,7 +170,7 @@ client.on("message", async message => {
                     }
                     break;
                 case "leave":
-                    if (!gameNow || !playing || playerIndex === -1) message.reply("There is no game to leave. Either a game has not been started, or you have not joined the current game.");
+                    if (playerIndex === -1) message.reply("There is no game for you to leave.");
                     if ((gameNow || playing) && playerIndex !== -1) {
                         currentPlayers.splice(playerIndex, 1);
                         message.channel.send("_" + message.author + " has left the game._").catch(error => message.reply(`Failed to perform action: ${error}`));
