@@ -100,7 +100,7 @@ client.on("message", async message => {
                                 + "`game stats` - Show vital statistics about the current game\n"
                                 + "`game players` - Lists all players in the current game\n"
                                 + "`roles list` - Lists all roles\n"
-                                + "`roles x` - Provides specific info on a role, where _x_ is the role name
+                                + "`roles x` - Provides specific info on a role, where _x_ is the role name"
                         },
                         {
                             name: "For Gamemasters",
