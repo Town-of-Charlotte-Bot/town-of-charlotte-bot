@@ -293,15 +293,13 @@ client.on("message", async message => {
     if (message.content.startsWith(prefix + "run")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
-            var content = message.content.substr(5);
-            return eval(content);
+            return eval(message.content.substr(5));
         }
     }
     if (message.content.startsWith(prefix + "print")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
-            var content = message.content.substr(7);
-            message.channel.send(eval(content));
+            message.channel.send(eval(message.content.substr(7)));
         }
     }
 });
