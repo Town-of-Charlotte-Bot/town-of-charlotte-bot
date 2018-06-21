@@ -7,7 +7,7 @@
             },
             "info": {
                 "devinfo": "Gives info about the Town of Charlotte game and how to play",
-                "working": "false"
+                "working": "true"
             }
         }
     },
@@ -15,7 +15,7 @@
         "commands": {
             "game-join": {
                 "devinfo": "Join the currently initiated game",
-                "working": "false"
+                "working": "true"
             },
             "game-stats": {
                 "devinfo": "Show vital-statistics about the current game",
@@ -23,7 +23,7 @@
             },
             "game-players": {
                 "devinfo": "Lists all players in the current game",
-                "working": "false"
+                "working": "true"
             },
             "players-dead": {
                 "devinfo": "Lists the players who are dead in the current game",
@@ -39,15 +39,15 @@
         "commands": {
             "game-initiate": {
                 "devinfo": "Initiate a new game for players to join",
-                "working": "false"
+                "working": "true"
             },
             "game-start": {
                 "devinfo": "Start a new game with the players that have joined",
-                "working": "false"
+                "working": "true"
             },
             "game-end": {
                 "devinfo": "End the current game",
-                "working": "false"
+                "working": "true"
             },
             "players-good": {
                 "devinfo": "DMs the user a list of all good players in the current game",
