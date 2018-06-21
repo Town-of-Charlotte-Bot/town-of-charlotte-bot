@@ -99,7 +99,8 @@ client.on("message", async message => {
                                 + "`game leave` - Leave the current game\n"
                                 + "`game stats` - Show vital statistics about the current game\n"
                                 + "`game players` - Lists all players in the current game\n"
-                                + "`game roles` - Lists all roles"
+                                + "`roles list` - Lists all roles\n"
+                                + "`roles x` - Provides specific info on a role, where _x_ is the role name
                         },
                         {
                             name: "For Gamemasters",
@@ -107,7 +108,7 @@ client.on("message", async message => {
                                 + "`game start` - Start a new game for players to join\n"
                                 + "`game begin` - Begin the game with the players that have joined\n"
                                 + "`game end` - End the current game\n"
-                                + "`roles list` - DMs the user a list of all players in the current game and their respective roles"
+                                + "`roles players` - DMs the user a list of all players in the current game and their respective roles"
                         },
                         {
                             name: "Dev Tools",
@@ -273,15 +274,15 @@ client.on("message", async message => {
                                     {
                                         name: "General",
                                         value: "Day " + game.day + "\n"
-                                            + "Died last night:\n" + game.nightlyDead.join("\n")
+                                            + "Died last night:\n" + (game.nightlyDead.length >= 1) ? game.nightlyDead.join("\n") : "None"
                                     },
                                     {
                                         name: "Alive",
-                                        value: game.alive.join("\n")
+                                        value: (game.alive.length >= 1) ? game.alive.join("\n") : "None"
                                     },
                                     {
                                         name: "Dead",
-                                        value: game.dead.join("\n")
+                                        value: (game.dead.length >= 1) ? game.dead.join("\n") : "None"
                                     }
                                 ],
                                 footer: {
@@ -302,12 +303,12 @@ client.on("message", async message => {
                     title: "List of all roles in the Town of Charlotte game",
                     fields: [
                         {
-                            name: "Blah",
-                            value: "Blah blah"
+                            name: "Role1",
+                            value: "Brief summary"
                         },
                         {
-                            name: "Etc.",
-                            value: "Etcetera"
+                            name: "Role2",
+                            value: "Another brief summary"
                         }
                     ],
                     footer: {
