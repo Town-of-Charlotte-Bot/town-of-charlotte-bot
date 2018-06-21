@@ -151,9 +151,8 @@ client.on("message", async message => {
         case "game":
             switch (args[0]) {
                 case "join":
-                    var playersCheck = currentPlayers.join(",").indexOf(message.member + ",");
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
-                    if (gameNow && playersCheck === -1) {
+                    else if (gameNow && !((message.member + ",").test(currentPlayers.join(",")))) {
                         currentPlayers.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
                         message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -189,7 +188,7 @@ client.on("message", async message => {
                 case "start":
                     if (!role) message.reply("You are not authorized to perform this action.");
                     if (role && (gameNow || playing)) message.reply("There is already a game in progress.");
-                    if (role) {
+                    if (role && !gameNow && !playing) {
                         gameNow = true;
                         message.channel.send({
                             embed: {
@@ -212,7 +211,7 @@ client.on("message", async message => {
                     break;
                 case "end":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (gameNow || !playing)) message.reply("There is no current game to end.");
+                    if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
                     if (role && !gameNow && playing) {
                         playing = false;
                         currentPlayers = [];
