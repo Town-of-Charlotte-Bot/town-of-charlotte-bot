@@ -12,7 +12,10 @@ const prefix = package.settings.prefix;
 
 // Store internal game data
 var game = {
-    day: 0
+    day: 0,
+    nightlyDead: [],
+    alive: [],
+    dead: []
 };
 
 // Database of all roles
@@ -40,10 +43,6 @@ var roles = {
         
     }
 };
-
-// List of players in the game
-var currentPlayers = [];
-var oldPlayers = [];
 
 // Boolean that triggers if a game is available for joining
 var gameNow = false;
@@ -75,7 +74,7 @@ client.on("message", async message => {
     // Check if the user has the Gamemaster role (AKA privileges)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
-    const playerIndex = currentPlayers.join().indexOf(message.member);
+    const playerIndex = game.alive.join().indexOf(message.member);
     
     // All our commands
     switch (command) {
@@ -98,7 +97,7 @@ client.on("message", async message => {
                             name: "In-Game",
                             value: "`game join` - Join the started game\n"
                                 + "`game leave` - Leave the current game\n"
-                                + "`game stats` - Show vital-statistics about the current game\n"
+                                + "`game stats` - Show vital statistics about the current game\n"
                                 + "`game players` - Lists all players in the current game\n"
                                 + "`game roles` - Lists all roles"
                         },
@@ -108,7 +107,7 @@ client.on("message", async message => {
                                 + "`game start` - Start a new game for players to join\n"
                                 + "`game begin` - Begin the game with the players that have joined\n"
                                 + "`game end` - End the current game\n"
-                                + "`players list` - DMs the user a list of all players in the current game and their respective roles"
+                                + "`roles list` - DMs the user a list of all players in the current game and their respective roles"
                         },
                         {
                             name: "Dev Tools",
@@ -159,7 +158,7 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
-                        currentPlayers.push(message.member);
+                        game.alive.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
                         message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
@@ -170,12 +169,12 @@ client.on("message", async message => {
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
                     if ((gameNow || playing) && playerIndex !== -1) {
-                        currentPlayers.splice(playerIndex, 1);
+                        game.alive.splice(playerIndex, 1);
                         message.channel.send("_" + message.author + " has left the game._").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
                 case "players":
-                    if ((!gameNow && !playing) || currentPlayers.length < 1) message.reply("There are no players to show. Either a game has not been started, or there are no players yet in the current game.");
+                    if ((!gameNow && !playing) || game.alive.length < 1) message.reply("There are no players to show. Either a game has not been started, or there are no players yet in the current game.");
                     else if (gameNow || playing) {
                         message.channel.send({
                             embed: {
@@ -187,11 +186,11 @@ client.on("message", async message => {
                                 fields: [
                                     {
                                         name: "Users",
-                                        value: currentPlayers.join("\n")
+                                        value: game.alive.join("\n")
                                     },
                                     {
                                         name: "Number",
-                                        value: currentPlayers.length
+                                        value: game.alive.length
                                     }
                                 ],
                                 footer: {
@@ -230,7 +229,7 @@ client.on("message", async message => {
                     if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then it may be ended.");
                     if (role && !gameNow && playing) {
                         playing = false;
-                        currentPlayers = [];
+                        game.alive = [];
                         game.day = 0;
                         message.channel.send("The current game has been ended.").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
@@ -259,24 +258,56 @@ client.on("message", async message => {
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
+                    break;
+                case "stats":
+                    if (!playing) message.reply("There is no current game to show the stats of.");
+                    if (playing) {
+                        message.channel.send({
+                            embed: {
+                                //color: 3447003,
+                                author: {
+                                    name: "> Vital Statistics <"
+                                },
+                                title: "Current game stats",
+                                fields: [
+                                    {
+                                        name: "General",
+                                        value: "Day " + game.day + "\n"
+                                            + "Died last night:\n" + game.nightlyDead.join("\n")
+                                    },
+                                    {
+                                        name: "Alive",
+                                        value: game.alive.join("\n")
+                                    },
+                                    {
+                                        name: "Dead",
+                                        value: game.dead.join("\n")
+                                    }
+                                ],
+                                footer: {
+                                    text: "Not what you're looking for? " + prefix + "help"
+                                }
+                            }
+                        }).catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
             }
             break;
-        case "players":
+        case "roles":
             message.channel.send({
                 embed: {
                     //color: 3447003,
                     author: {
-                        name: "> Players <"
+                        name: "> Game Roles <"
                     },
-                    title: "List of players in the current game",
+                    title: "List of all roles in the Town of Charlotte game",
                     fields: [
                         {
-                            name: "Users",
-                            value: "Test1"
+                            name: "Blah",
+                            value: "Blah blah"
                         },
                         {
-                            name: "Number",
-                            value: "Test2"
+                            name: "Etc.",
+                            value: "Etcetera"
                         }
                     ],
                     footer: {
