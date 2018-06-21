@@ -65,7 +65,7 @@ client.on("message", async message => {
     const command = args.shift().toLowerCase();
     
     // Check if the user has the Gamemaster role
-    const role = message.author.roles.some(r=>["Gamemaster"].includes(r.name));
+    const role = message.members.roles.some(r=>["Gamemaster"].includes(r.name));
     
     // All our commands
     switch (command) {
@@ -146,7 +146,7 @@ client.on("message", async message => {
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow) {
                         currentPlayers.push(message.author);
-                        message.reply("_you have joined the game._");
+                        message.channel.send(`_${user} has joined the game._`);
                     }
                     break;
                 case "start":
