@@ -64,7 +64,9 @@ client.on("guildDelete", guild => {
 
 // When a message is posted
 client.on("message", async message => {
+    // Ignore bots
     if (message.author.bot) return;
+    // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
     // Simple code that helps us separate the command from its arguments
@@ -162,7 +164,21 @@ client.on("message", async message => {
                     if (gameNow && playerIndex === -1) {
                         game.alive.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
-                        message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.send("You are now in the game!").then(function(){
+                            message.channel.awaitMessages(response => message.content, {
+                              max: 1,
+                              time: 300000000,
+                              errors: ['time'],
+                            })
+                            .then((collected) => {
+                                message.author.send(`Your Name is: ${collected.first().content}`);
+                              })
+                              .catch(function(){
+                                message.channel.send('You didnt write your name');
+                              });
+                          });
+                        
+                        //.catch(error => message.reply(`Failed to perform action: ${error}`));
                         console.log(message.author);
                     }
                     if (gameNow && playerIndex !== -1) {
