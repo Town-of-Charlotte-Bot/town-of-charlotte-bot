@@ -52,6 +52,7 @@ var playing  = false;
 // When the bot loads
 client.on("ready", () => {
     console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
+    client.user.setActivity("Town of Charlotte");
 });
 
 // Server joining/leaving
@@ -124,6 +125,7 @@ client.on("message", async message => {
             break;
         case "ping":
             const temp = await message.channel.send("Pinging...").catch(error => message.reply(`Failed to perform action: ${error}`));
+            message.channel.startTyping();
             temp.edit(`Pong! Latency is ${temp.createdTimestamp - message.createdTimestamp}ms.`);
             break;
         case "info":
@@ -162,6 +164,7 @@ client.on("message", async message => {
                         game.alive.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
                         message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
+                        console.log(message.channel.dmChannel);
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
