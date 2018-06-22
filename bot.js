@@ -78,6 +78,14 @@ client.on("message", async message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
+    switch (command) {
+        case "action":
+            switch (args[0]) {
+                case "kill":
+                    message.author.send("It works!");
+            }
+    }
+    
     // Check if the user has the Gamemaster role (AKA privileges)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
@@ -298,13 +306,6 @@ client.on("message", async message => {
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
-                    }
-                    break;
-                case "action":
-                    switch (args[1]) {
-                        case "kill":
-                            message.author.send("It works!");
-                            break;
                     }
             }
             break;
