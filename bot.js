@@ -69,7 +69,6 @@ client.on("message", async message => {
     // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
-    console.log(message.author);
     console.log(message.author.lastMessage);
     /*if (message.author.lastMessage.Message.isDM) {
         console.log(message.author.lastMessage.Message.content);
