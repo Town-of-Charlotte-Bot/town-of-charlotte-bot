@@ -1,5 +1,5 @@
 /*
-    Some code taken from the following:
+    Some of the base-code taken from:
     https://gist.github.com/eslachance/3349734a98d30011bb202f47342601d3
 */
 
@@ -69,7 +69,7 @@ client.on("message", async message => {
     // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
-    console.log(message.author.lastMessage.channel.lastMessage);
+    console.log(message.author.lastMessage.channel.lastMessageID);
     /*if (message.author.lastMessage.Message.isDM) {
         console.log(message.author.lastMessage.Message.content);
     }*/
@@ -298,6 +298,13 @@ client.on("message", async message => {
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
+                    break;
+                case "action":
+                    switch (args[1]) {
+                        case "kill":
+                            message.author.send("It works!");
+                            break;
                     }
             }
             break;
