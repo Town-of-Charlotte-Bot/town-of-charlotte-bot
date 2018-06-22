@@ -69,7 +69,7 @@ client.on("message", async message => {
     // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
-    message.isDM = (m.guild) ? false : true;
+    message.isDM = (message.guild) ? false : true;
     
     if (message.isDM) {
         message.author.send("_Woot!_");
