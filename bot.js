@@ -64,14 +64,14 @@ client.on("guildDelete", guild => {
 
 // When a message is posted
 client.on("message", async message => {
+    message.channel.startTyping();
+    
     // Ignore bots
     if (message.author.bot) return;
     // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
-    message.isDM = (message.guild) ? false : true;
-    
-    if (message.isDM) {
+    if (message.guild == null) {
         message.author.send("_Woot!_");
     }
     
@@ -132,7 +132,6 @@ client.on("message", async message => {
             break;
         case "ping":
             const temp = await message.channel.send("Pinging...").catch(error => message.reply(`Failed to perform action: ${error}`));
-            message.channel.startTyping();
             temp.edit(`Pong! Latency is ${temp.createdTimestamp - message.createdTimestamp}ms.`);
             break;
         case "info":
@@ -359,6 +358,8 @@ client.on("message", async message => {
             message.channel.send(eval(message.content.substr(7)));
         }
     }
+    
+    message.channel.stopTyping();
 });
 
 client.login(process.env.BOT_TOKEN);
