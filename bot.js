@@ -163,7 +163,7 @@ client.on("message", async message => {
                         game.alive.push(message.member);
                         message.channel.send("_" + message.author + " has joined the game._");
                         message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
-                        console.log(message.channel.dmChannel);
+                        console.log(message.author.dmChannel);
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
