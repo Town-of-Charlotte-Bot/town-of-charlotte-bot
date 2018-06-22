@@ -64,18 +64,16 @@ client.on("guildDelete", guild => {
 
 // When a message is posted
 client.on("message", async message => {
-    message.channel.startTyping();
-    
     // Ignore bots
     if (message.author.bot) return;
     // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
     if (message.guild == null) {
-        message.reply("_Woot!_");
+        console.log(message.author.lastMessage.content);
     }
     
-    // Simple code that helps us separate the command from its arguments
+    // Simple code that helps us separate the command and its arguments
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
@@ -129,12 +127,10 @@ client.on("message", async message => {
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
-            message.channel.stopTyping();
             break;
         case "ping":
             const temp = await message.channel.send("Pinging...").catch(error => message.reply(`Failed to perform action: ${error}`));
             temp.edit(`Pong! Latency is ${temp.createdTimestamp - message.createdTimestamp}ms.`);
-            message.channel.stopTyping();
             break;
         case "info":
             message.channel.send({
@@ -163,7 +159,6 @@ client.on("message", async message => {
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
-            message.channel.stopTyping();
             break;
         case "game":
             switch (args[0]) {
@@ -178,7 +173,6 @@ client.on("message", async message => {
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
                     }
-                    message.channel.stopTyping();
                     break;
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
@@ -186,7 +180,6 @@ client.on("message", async message => {
                         game.alive.splice(playerIndex, 1);
                         message.channel.send("_" + message.author + " has left the game._").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    message.channel.stopTyping();
                     break;
                 case "players":
                     if ((!gameNow && !playing) || game.alive.length < 1) message.reply("There are no players to show. Either a game has not been started, or there are no players yet in the current game.");
@@ -214,7 +207,6 @@ client.on("message", async message => {
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    message.channel.stopTyping();
                     break;
                 case "start":
                     if (!role) message.reply("You are not authorized to perform this action.");
@@ -239,7 +231,6 @@ client.on("message", async message => {
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    message.channel.stopTyping();
                     break;
                 case "end":
                     if (!role) message.reply("You are not authorized to perform this action.");
@@ -250,7 +241,6 @@ client.on("message", async message => {
                         game.day = 0;
                         message.channel.send("The current game has been ended.").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    message.channel.stopTyping();
                     break;
                 case "begin":
                     if (!role) message.reply("You are not authorized to perform this action.");
@@ -276,7 +266,6 @@ client.on("message", async message => {
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    message.channel.stopTyping();
                     break;
                 case "stats":
                     if (!playing) message.reply("There is no current game to show the stats of.");
@@ -309,7 +298,6 @@ client.on("message", async message => {
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    message.channel.stopTyping();
             }
             break;
         case "roles":
@@ -335,7 +323,6 @@ client.on("message", async message => {
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
-            message.channel.stopTyping();
             break;
         case "delete":
             if (!role) message.reply("You are not authorized to perform this action.");
@@ -350,29 +337,24 @@ client.on("message", async message => {
                 console.log(`${message.member} cleared ${deleteCount} messages in ${message.channel}.`);
                 message.reply(`_Cleared ${deleteCount} messages._`);
             }
-            message.channel.stopTyping();
             break;
         case "logieboi":
             message.channel.send(":bear: ***Logie da Bear!*** :bear:");
-            message.channel.stopTyping();
             break;
         case "konurpapa":
             message.channel.send("_Woot!_");
-            message.channel.stopTyping();
     }
     if (message.content.startsWith(prefix + "run")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
             return eval(message.content.substr(5));
         }
-        message.channel.stopTyping();
     }
     if (message.content.startsWith(prefix + "print")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
             message.channel.send(eval(message.content.substr(7)));
         }
-        message.channel.stopTyping();
     }
 });
 
