@@ -208,7 +208,7 @@ client.on("message", async message => {
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
                         game.alive.push(playerTag);
-                        game.players[playerTag] = Object.keys(roles)[1];
+                        game.players[playerTag] = Object.keys(roles)[Math.round(Math.random(0, roles.length - 1))];
                         message.channel.send(`_ ${message.author} has joined the game._`);
                         message.author.send(`Your role is _${game.players[playerTag]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
