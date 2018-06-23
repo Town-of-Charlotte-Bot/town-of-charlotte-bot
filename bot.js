@@ -208,7 +208,7 @@ client.on("message", async message => {
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
                         game.alive.push(playerTag);
-                        game.players[playerTag] = roles[Math.random(0, roles.length - 1)];
+                        game.players[playerTag] = roles[1];
                         message.channel.send(`_ ${message.author} has joined the game._`);
                         message.author.send(`Your role is _${game.players[playerTag]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
@@ -244,7 +244,7 @@ client.on("message", async message => {
                                     }
                                 ],
                                 footer: {
-                                    text: "Not what you're looking for? " + prefix + "help"
+                                    text: `Not what you're looking for? ${prefix} help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -268,7 +268,7 @@ client.on("message", async message => {
                                     }
                                 ],
                                 footer: {
-                                    text: "Need help? " + prefix + "help"
+                                    text: `Need help? ${prefix} help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -303,7 +303,7 @@ client.on("message", async message => {
                                     }
                                 ],
                                 footer: {
-                                    text: "Need help? " + prefix + "help"
+                                    text: `Need help? ${prefix} help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
