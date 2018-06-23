@@ -117,7 +117,7 @@ client.on("message", async message => {
             }
     }
     
-    // Check if the user has the Gamemaster role (AKA privileges)
+    // Check if the user has the Gamemaster role (AKA rights)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
     const playerIndex = game.alive.join().indexOf(message.member);
@@ -208,7 +208,7 @@ client.on("message", async message => {
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
                         game.alive.push(playerTag);
-                        game.players[playerTag] = roles[1];
+                        game.players[playerTag] = Object.keys(roles)[1];
                         message.channel.send(`_ ${message.author} has joined the game._`);
                         message.author.send(`Your role is _${game.players[playerTag]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
