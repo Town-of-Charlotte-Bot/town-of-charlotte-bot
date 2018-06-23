@@ -110,7 +110,6 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    if (message.author.lastMessage.type === "DEFAULT") return message.author.send("Don't post that publicly!");
                     return message.author.send("Killing");
                     break;
                 case "block":
@@ -265,7 +264,7 @@ client.on("message", async message => {
                                 fields: [
                                     {
                                         name: "A new Town of Charlotte game has just been started.",
-                                        value: "To join the game, type `" + prefix + "game join` and you will be DMed your role."
+                                        value: `To join the game, type \`${prefix} game join\` and you will be DMed your role.`
                                     }
                                 ],
                                 footer: {
@@ -336,7 +335,7 @@ client.on("message", async message => {
                                     }
                                 ],
                                 footer: {
-                                    text: "Not what you're looking for? " + prefix + "help"
+                                    text: `Not what you're looking for? ${prefix} help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -362,7 +361,7 @@ client.on("message", async message => {
                         }
                     ],
                     footer: {
-                        text: "Not what you're looking for? " + prefix + "help"
+                        text: `Not what you're looking for? ${prefix} help`
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -387,12 +386,12 @@ client.on("message", async message => {
         case "konurpapa":
             message.channel.send("_Woot!_");
     }
-    /*if (message.content.startsWith(prefix + "run")) {
+    if (message.content.startsWith(prefix + "run")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
             return eval(message.content.substr(5));
         }
-    }*/
+    }
     if (message.content.startsWith(prefix + "print")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
