@@ -47,34 +47,45 @@ Jailor: {
 
 // Database of all roles
 var roles = {
-    Investigator: {
-        type: "good",
-        state: null,
-        txt: "Target 1 person each night for a clue to their role (listing some possible roles).",
-        abilities: {
-            clues: [Infinity]
+    good: {
+        Investigator: {
+            type: "good",
+            state: null,
+            txt: "Target 1 person each night for a clue to their role (listing some possible roles).",
+            abilities: {
+                clues: [Infinity]
+            },
+            immunity: {
+                night: false,
+                bite: false,
+                detect: false
+            }
         },
-        immunity: {
-            night: false,
-            bite: false,
-            detect: false
+        Jailor: {
+            type: "good",
+            state: null,
+            txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
+            abilities: {
+                block: [Infinity, "You were locked up by the Jailor!"],
+                kill: [1, "You were executed by the Jailor!"]
+            },
+            immunity: {
+                night: false,
+                bite: false,
+                detect: false
+            }
         }
     },
-    Jailor: {
-        type: "good",
-        state: null,
-        txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
-        abilities: {
-            block: [Infinity, "You were locked up by the Jailor!"],
-            kill: [1, "You were executed by the Jailor!"]
-        },
-        immunity: {
-            night: false,
-            bite: false,
-            detect: false
-        }
+    evil: {
+        
+    },
+    neutral: {
+        
     }
 };
+
+// Iterates to represent which type of role is being given, the ratio being 3 good to 1 evil to 1 neutral
+var roleType = 1;
 
 // Boolean that triggers if a game is available for joining
 var gameNow = false;
@@ -208,7 +219,21 @@ client.on("message", async message => {
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
                         game.alive.push(playerTag);
-                        game.players[playerTag] = Object.keys(roles)[Math.round(Math.random(0, roles.length - 1))];
+                        switch (roleType) {
+                            case 1:
+                            case 2:
+                            case 3:
+                                game.players[playerTag] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
+                                break;
+                            case 4:
+                                game.players[playerTag] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
+                                break;
+                            case 5:
+                                game.players[playerTag] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
+                        }
+                        if (roleType < 5) roleType++;
+                        if (roleType >= 5) roleType = 1;
+                        
                         message.channel.send(`_ ${message.author} has joined the game._`);
                         message.author.send(`Your role is _${game.players[playerTag]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
