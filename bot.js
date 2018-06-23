@@ -121,6 +121,8 @@ client.on("message", async message => {
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
     const playerIndex = game.alive.join().indexOf(message.member);
+    // The player's username, followed by their tag (e.g. JohnSmith1234)
+    const playerTag = message.author.username + "" + message.author.discriminator;
     
     // All our commands
     switch (command) {
@@ -163,7 +165,7 @@ client.on("message", async message => {
                         }
                     ],
                     footer: {
-                        text: "Command Prefix: " + prefix
+                        text: `Command Prefix: ${prefix}`
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -195,7 +197,7 @@ client.on("message", async message => {
                         }
                     ],
                     footer: {
-                        text: "Not what you're looking for? " + prefix + "help"
+                        text: `Not what you're looking for? ${prefix} help`
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -205,11 +207,10 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
-                        game.alive.push(message.member);
-                        game.players[message.author] = roles[Math.random(0, roles.length - 1)];
-                        message.channel.send("_" + message.author + " has joined the game._");
-                        message.author.send(`Your role is _${game.players[message.author]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
-                        console.log(message.author);
+                        game.alive.push(playerTag);
+                        game.players[playerTag] = roles[Math.random(0, roles.length - 1)];
+                        message.channel.send(`_ ${message.author} has joined the game._`);
+                        message.author.send(`Your role is _${game.players[playerTag]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
