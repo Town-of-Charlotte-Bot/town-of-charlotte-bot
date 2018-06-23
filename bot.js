@@ -110,6 +110,7 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
+                    if (message.author.lastMessage.type === "DEFAULT") return message.author.send("Don't post that publicly!");
                     return message.author.send("Killing");
                     break;
                 case "block":
