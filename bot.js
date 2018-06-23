@@ -15,32 +15,64 @@ var game = {
     day: 0,
     nightlyDead: [],
     alive: [],
-    dead: []
+    dead: [],
+    players: {}
 };
+
+// Deconstruction of a role
+/*
+// The name
+jailor: {
+    // The type of role (either good, bad or neutral)
+    type: "good",
+    // Whether the player is dead or alive (null if not assigned to the game)
+    state: null,
+    // Text explaining the role
+    txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
+    // Role abilities list
+    abilities: {
+        // The number of times it can be done in a single game (infinite) and the text to send to the blocked player
+        block: [Infinity, "You were locked up by the Jailor!"],
+        // The number of times (1) and the text to send
+        kill: [1, "You were executed by the Jailor!"]
+    },
+    // Role immunities (none)
+    immunity: {
+        night: false,
+        bite: false,
+        detect: false
+    }
+}
+*/
 
 // Database of all roles
 var roles = {
-    good: {
-        jailor: {
-            user: "",
-            state: "alive",
-            explainTxt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
-            abilities: {
-                block: [Infinity, "You were locked up by the Jailor!"],
-                kill: [1, "You were executed by the Jailor!"]
-            },
-            immunity: {
-                night: false,
-                bite: false,
-                detect: false
-            }
+    investigator: {
+        type: "good",
+        state: null,
+        txt: "Target 1 person each night for a clue to their role (listing some possible roles)",
+        abilities: {
+            clues: [Infinity]
+        },
+        immunity: {
+            night: false,
+            bite: false,
+            detect: false
         }
     },
-    evil: {
-        
-    },
-    neutral: {
-        
+    jailor: {
+        type: "good",
+        state: null,
+        txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
+        abilities: {
+            block: [Infinity, "You were locked up by the Jailor!"],
+            kill: [1, "You were executed by the Jailor!"]
+        },
+        immunity: {
+            night: false,
+            bite: false,
+            detect: false
+        }
     }
 };
 
@@ -69,20 +101,19 @@ client.on("message", async message => {
     // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
-    console.log(message.author.lastMessage.channel.lastMessageID);
-    /*if (message.author.lastMessage.Message.isDM) {
-        console.log(message.author.lastMessage.Message.content);
-    }*/
-    
     // Simple code that helps us separate the command and its arguments
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     
+    // Spent forever trying to get the bot to read DMs and then realized it's the same code as the other command stuff
     switch (command) {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    message.author.send("It works!");
+                    return message.author.send("Killing");
+                    break;
+                case "block":
+                    return message.author.send("Blocking");
             }
     }
     
@@ -175,8 +206,9 @@ client.on("message", async message => {
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
                         game.alive.push(message.member);
+                        game.players[message.author] = roles[Math.random(0, roles.length - 1)];
                         message.channel.send("_" + message.author + " has joined the game._");
-                        message.author.send("You are now in the game!").catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.send(`Your role is _${game.players[message.author]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
                         console.log(message.author);
                     }
                     if (gameNow && playerIndex !== -1) {
@@ -187,7 +219,7 @@ client.on("message", async message => {
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
                     if ((gameNow || playing) && playerIndex !== -1) {
                         game.alive.splice(playerIndex, 1);
-                        message.channel.send("_" + message.author + " has left the game._").catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
                 case "players":
@@ -243,7 +275,7 @@ client.on("message", async message => {
                     break;
                 case "end":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then it may be ended.");
+                    if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
                     if (role && !gameNow && playing) {
                         playing = false;
                         game.alive = [];
@@ -353,12 +385,12 @@ client.on("message", async message => {
         case "konurpapa":
             message.channel.send("_Woot!_");
     }
-    if (message.content.startsWith(prefix + "run")) {
+    /*if (message.content.startsWith(prefix + "run")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
             return eval(message.content.substr(5));
         }
-    }
+    }*/
     if (message.content.startsWith(prefix + "print")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
