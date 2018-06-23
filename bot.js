@@ -21,8 +21,8 @@ var game = {
 
 // Deconstruction of a role
 /*
-// The name
-jailor: {
+// The name (as displayed)
+Jailor: {
     // The type of role (either good, bad or neutral)
     type: "good",
     // Whether the player is dead or alive (null if not assigned to the game)
@@ -47,10 +47,10 @@ jailor: {
 
 // Database of all roles
 var roles = {
-    investigator: {
+    Investigator: {
         type: "good",
         state: null,
-        txt: "Target 1 person each night for a clue to their role (listing some possible roles)",
+        txt: "Target 1 person each night for a clue to their role (listing some possible roles).",
         abilities: {
             clues: [Infinity]
         },
@@ -60,7 +60,7 @@ var roles = {
             detect: false
         }
     },
-    jailor: {
+    Jailor: {
         type: "good",
         state: null,
         txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
