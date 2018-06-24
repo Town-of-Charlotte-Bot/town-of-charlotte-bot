@@ -3,7 +3,7 @@
     https://gist.github.com/eslachance/3349734a98d30011bb202f47342601d3
 */
 
-// What we need up-front
+// What we need to get
 const Discord = require("discord.js");
 const client = new Discord.Client();
 const package = require("./package.json");
@@ -23,8 +23,6 @@ var game = {
 /*
 // The name (as displayed)
 Jailor: {
-    // The type of role (either good, bad or neutral)
-    type: "good",
     // Whether the player is dead or alive (null if not assigned to the game)
     state: null,
     // Text explaining the role
@@ -45,11 +43,18 @@ Jailor: {
 }
 */
 
-// Database of all roles
+/*
+    Actions (so I can keep them straight):
+    lock - role-blocks target, protects from harm
+    kill - kills target
+    clues - gives two options for target's role
+    revive - makes the target live
+*/
+
+// Simple database of all roles
 var roles = {
     good: {
         Investigator: {
-            type: "good",
             state: null,
             txt: "Target 1 person each night for a clue to their role (listing some possible roles).",
             abilities: {
@@ -62,12 +67,23 @@ var roles = {
             }
         },
         Jailor: {
-            type: "good",
             state: null,
             txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
             abilities: {
-                block: [Infinity, "You were locked up by the Jailor!"],
+                lock: [Infinity, "You were locked up by the Jailor!"],
                 kill: [1, "You were executed by the Jailor!"]
+            },
+            immunity: {
+                night: false,
+                bite: false,
+                detect: false
+            }
+        },
+        Doctor: {
+            state: null,
+            txt: "Heal 1 person each night, preventing them from dying.",
+            abilities: {
+                revive: [Infinity]
             },
             immunity: {
                 night: false,
@@ -77,7 +93,18 @@ var roles = {
         }
     },
     evil: {
-        
+        Godfather: {
+            state: null,
+            txt: "Selects target for mafia to kill, if no mafioso you will perform it.",
+            abilities: {
+                kill: [Infinity, "You were killed by the Mafia!"]
+            },
+            immunity: {
+                night: true,
+                bite: true,
+                detect: true
+            }
+        }
     },
     neutral: {
         
@@ -132,8 +159,6 @@ client.on("message", async message => {
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
     const playerIndex = game.alive.join().indexOf(message.member);
-    // The player's username, followed by their tag (e.g. JohnSmith1234)
-    const playerTag = message.author.username + "" + message.author.discriminator;
     
     // All our commands
     switch (command) {
@@ -208,7 +233,7 @@ client.on("message", async message => {
                         }
                     ],
                     footer: {
-                        text: `Not what you're looking for? ${prefix} help`
+                        text: `Not what you're looking for? ${prefix}help`
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -218,24 +243,24 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
-                        game.alive.push(playerTag);
+                        game.alive.push(message.author.username);
                         switch (roleType) {
                             case 1:
                             case 2:
                             case 3:
-                                game.players[playerTag] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
                                 break;
                             case 4:
-                                game.players[playerTag] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
                                 break;
                             case 5:
-                                game.players[playerTag] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
                         }
                         if (roleType < 5) roleType++;
                         if (roleType >= 5) roleType = 1;
                         
-                        message.channel.send(`_ ${message.author} has joined the game._`);
-                        message.author.send(`Your role is _${game.players[playerTag]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.channel.send(`_${message.author} has joined the game._`);
+                        message.author.send(`Your role is _${game.players[message.author.username]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
@@ -269,7 +294,7 @@ client.on("message", async message => {
                                     }
                                 ],
                                 footer: {
-                                    text: `Not what you're looking for? ${prefix} help`
+                                    text: `Not what you're looking for? ${prefix}help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -289,11 +314,11 @@ client.on("message", async message => {
                                 fields: [
                                     {
                                         name: "A new Town of Charlotte game has just been started.",
-                                        value: `To join the game, type \`${prefix} game join\` and you will be DMed your role.`
+                                        value: `To join the game, type \`${prefix}game join\` and you will be DMed your role.`
                                     }
                                 ],
                                 footer: {
-                                    text: `Need help? ${prefix} help`
+                                    text: `Need help? ${prefix}help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -328,7 +353,7 @@ client.on("message", async message => {
                                     }
                                 ],
                                 footer: {
-                                    text: `Need help? ${prefix} help`
+                                    text: `Need help? ${prefix}help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -360,7 +385,7 @@ client.on("message", async message => {
                                     }
                                 ],
                                 footer: {
-                                    text: `Not what you're looking for? ${prefix} help`
+                                    text: `Not what you're looking for? ${prefix}help`
                                 }
                             }
                         }).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -386,7 +411,7 @@ client.on("message", async message => {
                         }
                     ],
                     footer: {
-                        text: `Not what you're looking for? ${prefix} help`
+                        text: `Not what you're looking for? ${prefix}help`
                     }
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
