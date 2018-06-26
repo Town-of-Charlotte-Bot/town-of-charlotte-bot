@@ -273,7 +273,7 @@ client.on("message", async message => {
                     break;
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
-                    if (gameNow && playerIndex > -1) message.reply("You may not leave until the game has begun.");
+                    if (gameNow && playerIndex > -1) message.replyTTS("You may not leave until the game has begun.");
                     if (playing && playerIndex > -1) {
                         game.alive.splice(playerIndex, 1);
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
