@@ -81,7 +81,7 @@ var roles = {
         },
         Doctor: {
             state: null,
-            text: "Heal 1 person each night, preventing them from dying.",
+            txt: "Heal 1 person each night, preventing them from dying.",
             abilities: {
                 revive: [Infinity]
             },
@@ -283,8 +283,12 @@ client.on("message", async message => {
                         if (roleType >= 5) roleType = 1;
                         
                         message.channel.send(`_${message.author} has joined the game._`);
-                        var name = game.players[message.author.username].toString();
-                        message.author.send(`Your role is _${name}_. ${roles.Doctor.text}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        
+                        // Thing that checks whatever number roleType is and returns the appropriate string
+                        var type = (roleType > 0 && roleType < 4) ? "good" : (roleType === 4) ? "evil" : "neutral";
+                        
+                        // Send a message to the player with their role and the explanation
+                        message.author.send(`Your role is _${game.players[message.author.username]}_.\n${roles[type][game.players[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
