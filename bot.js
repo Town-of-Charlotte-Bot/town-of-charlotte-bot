@@ -3,12 +3,13 @@
     https://gist.github.com/eslachance/3349734a98d30011bb202f47342601d3
 */
 
-// What we need to get
+// What we need to start off with
 const Discord = require("discord.js");
 const client = new Discord.Client();
 const package = require("./package.json");
 const commands = require("./info/commands.json");
 const prefix = package.settings.prefix;
+var logs = [];
 
 // Store internal game data
 var game = {
@@ -131,6 +132,10 @@ client.on("guildCreate", guild => {
 });
 client.on("guildDelete", guild => {
     console.log(`Removed from server: ${guild.name} (id: ${guild.id}).`);
+});
+
+client.on("debug", debug => {
+    logs.push(debug);
 });
 
 // When a message is posted
@@ -273,7 +278,7 @@ client.on("message", async message => {
                     break;
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
-                    if (gameNow && playerIndex > -1) message.replyTTS("You may not leave until the game has begun.");
+                    if (gameNow && playerIndex > -1) message.reply("You may not leave until the game has begun.");
                     if (playing && playerIndex > -1) {
                         game.alive.splice(playerIndex, 1);
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -435,6 +440,9 @@ client.on("message", async message => {
                 console.log(`${message.member} cleared ${deleteCount} messages in ${message.channel}.`);
                 message.reply(`_Cleared ${deleteCount} messages._`);
             }
+            break;
+        case "logs":
+            message.channel.send(logs.join("\n"));
             break;
         case "logieboi":
             message.channel.send(":bear: ***Logie da Bear!*** :bear:");
