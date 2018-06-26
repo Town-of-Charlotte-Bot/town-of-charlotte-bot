@@ -19,33 +19,10 @@ var game = {
     players: {}
 };
 
-// Deconstruction of a role
-/*
-// The name (as displayed)
-Jailor: {
-    // Whether the player is dead or alive (null if not assigned to the game)
-    state: null,
-    // Text explaining the role
-    txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
-    // Role abilities list
-    abilities: {
-        // The number of times it can be done in a single game (infinite) and the text to send to the blocked player
-        block: [Infinity, "You were locked up by the Jailor!"],
-        // The number of times (1) and the text to send
-        kill: [1, "You were executed by the Jailor!"]
-    },
-    // Role immunities (none)
-    immunity: {
-        night: false,
-        bite: false,
-        detect: false
-    }
-}
-*/
-
 /*
     Actions (so I can keep them straight):
     lock - role-blocks target, protects from harm
+    block - role-blocks target
     kill - kills target
     clues - gives two options for target's role
     revive - makes the target live
@@ -129,7 +106,8 @@ var roles = {
                 night: true,
                 bite: true,
                 detect: true
-            }
+            },
+            wins: "solo"
         }
     }
 };
@@ -296,7 +274,7 @@ client.on("message", async message => {
                     break;
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
-                    if ((gameNow || playing) && playerIndex !== -1) {
+                    if ((gameNow && playerIndex !== -1) || (playing && playerIndex !== -1)) {
                         game.alive.splice(playerIndex, 1);
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
