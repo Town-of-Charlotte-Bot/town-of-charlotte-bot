@@ -197,8 +197,7 @@ client.on("message", async message => {
                         },
                         {
                             name: "Dev Tools",
-                            value: "`run x` - Run the proceeding code, where _x_ is the code to run\n"
-                                + "`print x` - Print the output of the proceeding code, where _x_ is the code to run"
+                            value: "`print x` - Print the output of the proceeding code, where _x_ is the code to run"
                         }
                     ],
                     footer: {
@@ -249,13 +248,13 @@ client.on("message", async message => {
                             case 1:
                             case 2:
                             case 3:
-                                game.players[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.good)[Math.floor(Math.random(0, roles.length - 1))];
                                 break;
                             case 4:
-                                game.players[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.evil)[Math.floor(Math.random(0, roles.length - 1))];
                                 break;
                             case 5:
-                                game.players[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.neutral)[Math.floor(Math.random(0, roles.length - 1))];
                         }
                         if (roleType < 5) roleType++;
                         if (roleType >= 5) roleType = 1;
@@ -274,6 +273,7 @@ client.on("message", async message => {
                     break;
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
+                    if (gameNow && playerIndex > -1) message.reply("You may not leave until the game has begun.");
                     if (playing && playerIndex > -1) {
                         game.alive.splice(playerIndex, 1);
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -446,7 +446,7 @@ client.on("message", async message => {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
             var content = eval(message.content.substr(7));
-            if (content == "") content = "\n";
+            if (message.channel.send(content) == "") content = "\n";
             message.channel.send(content);
         }
     }
