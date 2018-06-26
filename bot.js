@@ -274,7 +274,7 @@ client.on("message", async message => {
                     break;
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
-                    if ((gameNow || playing) && playerIndex !== -1) {
+                    if (playing && playerIndex > -1) {
                         game.alive.splice(playerIndex, 1);
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
@@ -442,16 +442,12 @@ client.on("message", async message => {
         case "konurpapa":
             message.channel.send("_Woot!_");
     }
-    if (message.content.startsWith(prefix + "run")) {
-        if (!role) message.reply("You are not authorized to perform this action.");
-        if (role) {
-            return eval(message.content.substr(5));
-        }
-    }
     if (message.content.startsWith(prefix + "print")) {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
-            message.channel.send(eval(message.content.substr(7)));
+            var content = eval(message.content.substr(7));
+            if (content == "") content = "\n";
+            message.channel.send(content);
         }
     }
 });
