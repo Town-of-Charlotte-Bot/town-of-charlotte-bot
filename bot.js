@@ -81,7 +81,7 @@ var roles = {
         },
         Doctor: {
             state: null,
-            txt: "Heal 1 person each night, preventing them from dying.",
+            text: "Heal 1 person each night, preventing them from dying.",
             abilities: {
                 revive: [Infinity]
             },
@@ -284,7 +284,7 @@ client.on("message", async message => {
                         
                         message.channel.send(`_${message.author} has joined the game._`);
                         var name = game.players[message.author.username].toString();
-                        message.author.send(`Your role is _${name}_. ${roles.Doctor.txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.send(`Your role is _${name}_. ${roles.Doctor.text}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
