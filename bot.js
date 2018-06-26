@@ -159,7 +159,7 @@ client.on("message", async message => {
     // Check if the user has the Gamemaster role (AKA rights)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
-    const playerIndex = game.alive.join().indexOf(message.author);
+    const playerIndex = game.alive.join().indexOf(message.author.username);
     
     // All our commands
     switch (command) {
@@ -274,7 +274,7 @@ client.on("message", async message => {
                     break;
                 case "leave":
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
-                    if ((gameNow && playerIndex !== -1) || (playing && playerIndex !== -1)) {
+                    if ((gameNow || playing) && playerIndex !== -1) {
                         game.alive.splice(playerIndex, 1);
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
