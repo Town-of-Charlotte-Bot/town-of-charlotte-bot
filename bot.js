@@ -271,7 +271,7 @@ client.on("message", async message => {
                             case 1:
                             case 2:
                             case 3:
-                                game.players[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
                                 break;
                             case 4:
                                 game.players[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
