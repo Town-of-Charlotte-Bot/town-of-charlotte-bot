@@ -283,7 +283,7 @@ client.on("message", async message => {
                         if (roleType >= 5) roleType = 1;
                         
                         message.channel.send(`_${message.author} has joined the game._`);
-                        message.author.send(`Your role is _${game.players[message.author.username]}_.`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.send(`Your role is _${game.players[message.author.username]}_.\n${roles[game.players[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
