@@ -159,7 +159,7 @@ client.on("message", async message => {
     // Check if the user has the Gamemaster role (AKA rights)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
-    const playerIndex = game.alive.join().indexOf(message.author.username);
+    const playerIndex = game.alive.indexOf(message.author.username);
     
     // All our commands
     switch (command) {
