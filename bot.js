@@ -56,7 +56,7 @@ var roles = {
     good: {
         Investigator: {
             state: null,
-            txt: "Target 1 person each night for a clue to their role (listing some possible roles).",
+            txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
             abilities: {
                 clues: [Infinity]
             },
@@ -181,7 +181,7 @@ client.on("message", async message => {
     // Check if the user has the Gamemaster role (AKA rights)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
-    const playerIndex = game.alive.join().indexOf(message.member);
+    const playerIndex = game.alive.join().indexOf(message.author);
     
     // All our commands
     switch (command) {
@@ -284,7 +284,7 @@ client.on("message", async message => {
                         
                         message.channel.send(`_${message.author} has joined the game._`);
                         
-                        // Thing that checks whatever number roleType is and returns the appropriate string
+                        // Check roleType and return the appropriate string
                         var type = (roleType > 0 && roleType < 4) ? "good" : (roleType === 4) ? "evil" : "neutral";
                         
                         // Send a message to the player with their role and the explanation
