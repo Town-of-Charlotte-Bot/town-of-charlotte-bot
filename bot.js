@@ -134,8 +134,13 @@ client.on("guildDelete", guild => {
     console.log(`Removed from server: ${guild.name} (id: ${guild.id}).`);
 });
 
+// Debugging
 client.on("debug", debug => {
     logs.push(debug);
+});
+
+client.on("guildMemberAdd", guild => {
+    console.log("A member was added!");
 });
 
 // When a message is posted
@@ -248,7 +253,11 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
+                        game.players[message.author.username] = message.author.id;
                         game.alive.push(message.author.username);
+                        message.author.addRole(message.guild.roles.find("name", "Playing Game")).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        
+                        // The iterating thing that decides what role is being given
                         switch (roleType) {
                             case 1:
                             case 2:
@@ -280,7 +289,10 @@ client.on("message", async message => {
                     if (playerIndex === -1) message.reply("There is no game for you to leave.");
                     if (gameNow && playerIndex > -1) message.reply("You may not leave until the game has begun.");
                     if (playing && playerIndex > -1) {
+                        delete game.players[message.author.username];
                         game.alive.splice(playerIndex, 1);
+                        message.author.removeRole(message.guild.roles.find("name", "Playing Game")).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
@@ -442,7 +454,8 @@ client.on("message", async message => {
             }
             break;
         case "logs":
-            message.channel.send(logs.join("\n"));
+            //message.channel.send(logs.join("\n"));
+            message.reply("This command is not working yet.");
             break;
         case "logieboi":
             message.channel.send(":bear: ***Logie da Bear!*** :bear:");
