@@ -253,7 +253,7 @@ client.on("message", async message => {
                     if (gameNow && playerIndex === -1) {
                         game.players[message.author.username] = message.author.id;
                         game.alive.push(message.author.username);
-                        message.author.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
                         // The iterating thing that decides what role is being given
                         switch (roleType) {
