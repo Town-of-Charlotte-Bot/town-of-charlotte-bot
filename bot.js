@@ -326,6 +326,7 @@ client.on("message", async message => {
                     if (role && (gameNow || playing)) message.reply("There is already a game in progress.");
                     if (role && !gameNow && !playing) {
                         gameNow = true;
+                        message.author.send("You are the Gamemaster for the current game. After each night the action log will be DMed to you, and during the game you can view secret stats about the players.");
                         message.channel.send({
                             embed: {
                                 //color: 3447003,
