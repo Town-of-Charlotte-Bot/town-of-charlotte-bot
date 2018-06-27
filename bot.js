@@ -167,7 +167,7 @@ client.on("message", async message => {
     // Convert the array of players into a string, and check if the user is one of them
     const playerIndex = game.alive.indexOf(message.author.username);
     // Grab the playing role
-    const playingRole = "458590289477763073";
+    const playingRole = message.guild.roles.find("name", "Playing Game");
     
     // All our commands
     switch (command) {
@@ -289,6 +289,7 @@ client.on("message", async message => {
                     if (playing && playerIndex > -1) {
                         delete game.players[message.author.username];
                         game.alive.splice(playerIndex, 1);
+                        message.member.removeRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
