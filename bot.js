@@ -139,10 +139,6 @@ client.on("debug", debug => {
     logs.push(debug);
 });
 
-client.on("guildMemberAdd", guild => {
-    console.log("A member was added!");
-});
-
 // When a message is posted
 client.on("message", async message => {
     // Ignore bots
@@ -170,6 +166,8 @@ client.on("message", async message => {
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
     // Convert the array of players into a string, and check if the user is one of them
     const playerIndex = game.alive.indexOf(message.author.username);
+    // Grab the playing role
+    const playingRole = "458590289477763073";
     
     // All our commands
     switch (command) {
@@ -255,7 +253,7 @@ client.on("message", async message => {
                     if (gameNow && playerIndex === -1) {
                         game.players[message.author.username] = message.author.id;
                         game.alive.push(message.author.username);
-                        message.author.addRole(message.guild.roles.find("name", "Playing Game")).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
                         // The iterating thing that decides what role is being given
                         switch (roleType) {
@@ -291,7 +289,6 @@ client.on("message", async message => {
                     if (playing && playerIndex > -1) {
                         delete game.players[message.author.username];
                         game.alive.splice(playerIndex, 1);
-                        message.author.removeRole(message.guild.roles.find("name", "Playing Game")).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
