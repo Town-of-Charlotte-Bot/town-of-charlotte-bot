@@ -125,7 +125,7 @@ var playing  = false;
 // When the bot loads
 client.on("ready", () => {
     console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
-    client.setGame("Town of Charlotte");
+    client.user.setGame("Town of Charlotte");
 });
 
 // Debugging
