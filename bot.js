@@ -149,7 +149,7 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    if (game.alive.indexOf(client.users.get("name", args[1])) > -1) {
+                    if (game.alive.indexOf(args[1]) > -1) {
                         return message.author.send(":thumbsup:");
                     } else {
                         return message.author.send(":thumbsdown:");
