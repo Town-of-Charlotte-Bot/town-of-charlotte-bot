@@ -151,7 +151,7 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "kill":
                     if (game.alive.indexOf(args[1]) > -1) {
-                        return client.fetchUser(game.alive.indexOf(args[1])).then(user => {
+                        return client.fetchUser(game.alive[args[1]]).then(user => {
                             user.send("You died!");
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
                     } else {
