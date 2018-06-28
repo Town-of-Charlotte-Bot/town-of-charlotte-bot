@@ -149,11 +149,13 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    if (game.alive.indexOf(args[1]) > -1) {
+                    return console.log(client.users.get("name", args[1]).username);
+                    
+                    /*if (game.alive.indexOf(args[1]) > -1) {
                         return message.author.send(client.users.get("name", args[1]).username + "#8843");
                     } else {
                         return message.author.send(":thumbsdown:");
-                    }
+                    }*/
                     break;
                 case "block":
                     return message.author.send("Blocking");
