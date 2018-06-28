@@ -1,6 +1,7 @@
 /*
-    Some of the base-code taken from:
+    Some help from the following:
     https://gist.github.com/eslachance/3349734a98d30011bb202f47342601d3
+    https://anidiotsguide_old.gitbooks.io/discord-js-bot-guide/content/information/understanding-asyncawait.html
 */
 
 // What we need to start off with
@@ -30,7 +31,7 @@ var game = {
     revive - makes the target live
 */
 
-// Simple database of all roles
+// Simple database of all roles (thought about reading/writing to a JSON file, but this is easier)
 var roles = {
     good: {
         Investigator: {
@@ -150,17 +151,15 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "kill":
                     return client.fetchUser("211220824265326594").then((user) => {
-                        message.author.send(user.username);
+                        user.send("You died!");
+                        /*if (game.alive.indexOf(args[1]) > -1) {
+                            return message.author.send(user.username);
+                        } else {
+                            return message.author.send(":thumbsdown:");
+                        }*/
                     }).catch((error) => {
                         console.log(error);
                     });
-                    //return console.log(client.members.fetchMember(args[1]).username);
-                    
-                    /*if (game.alive.indexOf(args[1]) > -1) {
-                        return message.author.send(client.users.get("name", args[1]).username + "#8843");
-                    } else {
-                        return message.author.send(":thumbsdown:");
-                    }*/
                     break;
                 case "block":
                     return message.author.send("Blocking");
