@@ -251,7 +251,7 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
-                    if (gameNow && playerIndex === -1) {
+                    if (gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
@@ -279,14 +279,14 @@ client.on("message", async message => {
                         // Send a message to the player with their role and the explanation
                         message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    if (gameNow && playerIndex !== -1) {
+                    if (gameNow && listed) {
                         message.reply("You have already joined the game.");
                     }
                     break;
                 case "leave":
-                    if (playerIndex === -1) message.reply("There is no game for you to leave.");
-                    if (gameNow && playerIndex > -1) message.reply("You may not leave until the game has begun.");
-                    if (playing && playerIndex > -1) {
+                    if (listed) message.reply("There is no game for you to leave.");
+                    if (gameNow && listed) message.reply("You may not leave until the game has begun.");
+                    if (playing && listed) {
                         delete game.players[message.author.username];
                         delete game.alive[message.author.username];
                         message.member.removeRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
