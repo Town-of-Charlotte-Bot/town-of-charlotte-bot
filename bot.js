@@ -150,7 +150,7 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    if (game.alive[args[1]] === null) {
+                    if (game.alive[args[1]] !== null) {
                         return client.fetchUser(game.players[args[1]]).then(user => {
                             user.send("You died!");
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
@@ -277,7 +277,7 @@ client.on("message", async message => {
                         var type = (roleType > 0 && roleType < 4) ? "good" : (roleType === 4) ? "evil" : "neutral";
                         
                         // Send a message to the player with their role and the explanation
-                        message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && listed) {
                         message.reply("You have already joined the game.");
