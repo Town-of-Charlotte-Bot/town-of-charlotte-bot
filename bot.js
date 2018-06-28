@@ -150,16 +150,13 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    return client.fetchUser("211220824265326594").then((user) => {
-                        user.send("You died!");
-                        /*if (game.alive.indexOf(args[1]) > -1) {
-                            return message.author.send(user.username);
-                        } else {
-                            return message.author.send(":thumbsdown:");
-                        }*/
-                    }).catch((error) => {
-                        console.log(error);
-                    });
+                    if (game.alive.indexOf(args[1]) > -1) {
+                        return client.fetchUser(game.alive.indexOf(args[1])).then(user => {
+                            user.send("You died!");
+                        }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+                    } else {
+                        return message.author.send("That player could not be found. Perhaps you spelled the name incorrectly, or the player is not in the current game.");
+                    }
                     break;
                 case "block":
                     return message.author.send("Blocking");
@@ -253,7 +250,7 @@ client.on("message", async message => {
         case "game":
             switch (args[0]) {
                 case "join":
-                    if (!gameNow) message.reply("There is no game to join. Either a game has not been started, or one is already in progress.");
+                    if (!gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
                         game.players[message.author.username] = message.author.id;
                         game.alive.push(message.author.username);
@@ -299,7 +296,7 @@ client.on("message", async message => {
                     }
                     break;
                 case "players":
-                    if ((!gameNow && !playing) || game.alive.length < 1) message.reply("There are no players to show. Either a game has not been started, or there are no players yet in the current game.");
+                    if ((!gameNow && !playing) || game.alive.length < 1) message.reply("There are no players to show. Perhaps a game has not been started, or there are no players yet in the current game.");
                     else if (gameNow || playing) {
                         message.channel.send({
                             embed: {
