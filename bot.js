@@ -165,8 +165,8 @@ client.on("message", async message => {
     
     // Check if the user has the Gamemaster role (AKA rights)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
-    // Convert the array of players into a string, and check if the user is one of them
-    const playerIndex = game.alive.indexOf(message.author.username);
+    // Check if the user is listed as alive
+    const listed = (game.alive[message.author.username] === null) ? false : true;
     // Grab the playing role
     const playingRole = message.guild.roles.find("name", "Playing Game");
     
@@ -253,7 +253,6 @@ client.on("message", async message => {
                     if (!gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
                     if (gameNow && playerIndex === -1) {
                         game.players[message.author.username] = message.author.id;
-                        game.alive.push(message.author.username);
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
                         // The iterating thing that decides what role is being given (need to rewrite all this)
