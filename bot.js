@@ -258,13 +258,13 @@ client.on("message", async message => {
                             case 1:
                             case 2:
                             case 3:
-                                game.players[message.author.username] = Object.keys(roles.good)[Math.floor(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.good)[Math.random(Math.random(0, roles.length - 1))];
                                 break;
                             case 4:
-                                game.players[message.author.username] = Object.keys(roles.evil)[Math.floor(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.evil)[Math.random(Math.random(0, roles.length - 1))];
                                 break;
                             case 5:
-                                game.players[message.author.username] = Object.keys(roles.neutral)[Math.floor(Math.random(0, roles.length - 1))];
+                                game.players[message.author.username] = Object.keys(roles.neutral)[Math.random(Math.random(0, roles.length - 1))];
                         }
                         if (roleType < 5) roleType++;
                         if (roleType >= 5) roleType = 1;
