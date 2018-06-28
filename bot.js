@@ -149,7 +149,7 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    return console.log(client.members.get(args[1]).username);
+                    return console.log(client.members.get("name", args[1]).username);
                     
                     /*if (game.alive.indexOf(args[1]) > -1) {
                         return message.author.send(client.users.get("name", args[1]).username + "#8843");
