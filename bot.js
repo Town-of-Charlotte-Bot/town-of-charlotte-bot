@@ -125,7 +125,7 @@ var playing  = false;
 // When the bot loads
 client.on("ready", () => {
     console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
-    client.user.setGame("Town of Charlotte");
+    //client.user.setGame("Town of Charlotte");
 });
 
 // Debugging
@@ -149,8 +149,11 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    return;
-                    //return message.guild.fetchMember();
+                    if (game.alive.indexOf(client.users.get("name", args[1])) > -1) {
+                        return message.author.send(":thumbsup:");
+                    } else {
+                        return message.author.send(":thumbsdown:");
+                    }
                     break;
                 case "block":
                     return message.author.send("Blocking");
