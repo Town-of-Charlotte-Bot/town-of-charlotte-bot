@@ -16,7 +16,7 @@ var logs = [];
 var game = {
     day: 0,
     nightlyDead: [],
-    alive: [],
+    alive: {},
     dead: [],
     players: {},
     master: ""
@@ -150,12 +150,12 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    if (game.alive.indexOf(args[1]) > -1) {
+                    if (game.alive[args[1]] === null) {
                         return client.fetchUser(game.players[args[1]]).then(user => {
                             user.send("You died!");
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
                     } else {
-                        return message.author.send("That player could not be found. Perhaps you spelled the name incorrectly, or the player is not in the current game.");
+                        return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
                     }
                     break;
                 case "block":
@@ -257,20 +257,20 @@ client.on("message", async message => {
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
                         // The iterating thing that decides what role is being given (need to rewrite all this)
-                        /*switch (roleType) {
+                        switch (roleType) {
                             case 1:
                             case 2:
                             case 3:
-                                game.players[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
+                                game.alive[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
                                 break;
                             case 4:
-                                game.players[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
+                                game.alive[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
                                 break;
                             case 5:
-                                game.players[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
+                                game.alive[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
                         }
                         if (roleType < 5) roleType++;
-                        if (roleType >= 5) roleType = 1;*/
+                        if (roleType >= 5) roleType = 1;
                         
                         message.channel.send(`_${message.author} has joined the game._`);
                         
@@ -278,7 +278,7 @@ client.on("message", async message => {
                         var type = (roleType > 0 && roleType < 4) ? "good" : (roleType === 4) ? "evil" : "neutral";
                         
                         // Send a message to the player with their role and the explanation
-                        message.author.send(`Your role is _${game.players[message.author.username]}_.\n${roles[type][game.players[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && playerIndex !== -1) {
                         message.reply("You have already joined the game.");
@@ -289,7 +289,7 @@ client.on("message", async message => {
                     if (gameNow && playerIndex > -1) message.reply("You may not leave until the game has begun.");
                     if (playing && playerIndex > -1) {
                         delete game.players[message.author.username];
-                        game.alive.splice(playerIndex, 1);
+                        delete game.alive[message.author.username];
                         message.member.removeRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
                         message.channel.send(`_${message.author} has left the game._`).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -356,7 +356,7 @@ client.on("message", async message => {
                         game = {
                             day: 0,
                             nightlyDead: [],
-                            alive: [],
+                            alive: {},
                             dead: [],
                             players: {},
                             master: ""
