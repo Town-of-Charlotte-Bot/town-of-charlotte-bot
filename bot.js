@@ -151,7 +151,6 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "kill":
                     if (game.alive.indexOf(args[1]) > -1) {
-                        message.author.send(game.players[args[1]]);
                         return client.fetchUser(game.players[args[1]]).then(user => {
                             user.send("You died!");
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
@@ -257,8 +256,8 @@ client.on("message", async message => {
                         game.alive.push(message.author.username);
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
-                        // The iterating thing that decides what role is being given
-                        switch (roleType) {
+                        // The iterating thing that decides what role is being given (need to rewrite all this)
+                        /*switch (roleType) {
                             case 1:
                             case 2:
                             case 3:
@@ -271,7 +270,7 @@ client.on("message", async message => {
                                 game.players[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
                         }
                         if (roleType < 5) roleType++;
-                        if (roleType >= 5) roleType = 1;
+                        if (roleType >= 5) roleType = 1;*/
                         
                         message.channel.send(`_${message.author} has joined the game._`);
                         
