@@ -17,7 +17,8 @@ var game = {
     nightlyDead: [],
     alive: [],
     dead: [],
-    players: {}
+    players: {},
+    master: ""
 };
 
 /*
@@ -155,7 +156,8 @@ client.on("message", async message => {
         case "action":
             switch (args[0]) {
                 case "kill":
-                    return message.author.send("Killing");
+                    return;
+                    //return message.guild.fetchMember();
                     break;
                 case "block":
                     return message.author.send("Blocking");
@@ -326,6 +328,7 @@ client.on("message", async message => {
                     if (role && (gameNow || playing)) message.reply("There is already a game in progress.");
                     if (role && !gameNow && !playing) {
                         gameNow = true;
+                        game.master = message.author.username;
                         message.author.send("You are the Gamemaster for the current game. After each night the action log will be DMed to you, and during the game you can view secret stats about the players.");
                         message.channel.send({
                             embed: {
