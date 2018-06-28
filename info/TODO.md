@@ -5,3 +5,4 @@
  - Prevent the Gamemaster from leaving or joining the current game
  - Make sure actions cannot be taken by the player unless they are in the current game and alive
  - Redo method for assigning roles, so that *after* the game has begun the roles are assigned (to make sure roles like GF are always in the game *but* assigned randomly)
+ - Set a minimum players count, so that enough players have to join before a game can begin (and some way to cancel if there aren't enough)
