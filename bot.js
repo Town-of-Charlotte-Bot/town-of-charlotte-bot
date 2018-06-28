@@ -125,14 +125,7 @@ var playing  = false;
 // When the bot loads
 client.on("ready", () => {
     console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
-});
-
-// Server joining/leaving
-client.on("guildCreate", guild => {
-    console.log(`Joined new server: ${guild.name} (id: ${guild.id}). Serving ${guild.memberCount} new members!`);
-});
-client.on("guildDelete", guild => {
-    console.log(`Removed from server: ${guild.name} (id: ${guild.id}).`);
+    client.setGame("Town of Charlotte");
 });
 
 // Debugging
