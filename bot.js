@@ -151,7 +151,7 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "kill":
                     if (game.alive.indexOf(args[1]) > -1) {
-                        return client.fetchUser(game.alive[args[1]]).then(user => {
+                        return client.fetchUser(game.players[args[1]]).then(user => {
                             user.send("You died!");
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
                     } else {
@@ -352,9 +352,15 @@ client.on("message", async message => {
                     if (!role) message.reply("You are not authorized to perform this action.");
                     if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
                     if (role && !gameNow && playing) {
-                        playing = false;
-                        game.alive = [];
-                        game.day = 0;
+                        // Reset the game object
+                        game = {
+                            day: 0,
+                            nightlyDead: [],
+                            alive: [],
+                            dead: [],
+                            players: {},
+                            master: ""
+                        };
                         message.channel.send("The current game has been ended.").catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
