@@ -162,9 +162,9 @@ client.on("message", async message => {
             if (listed) {
                 switch (args[0]) {
                     case "kill":
-                        if (args[1] === null) message.author.send("You must provide the username of your target.");
+                        if (args[1] === null) return message.author.send("You must provide the username of your target.");
                         if (game.alive[message.author.username].abilities.kill === null) return message.author.send("You do not have the ability to kill anyone.");
-                        if (game.alive[args[1]] === null && game.alive[message.author.username].abilities.kill === null) return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
+                        if (game.alive[args[1]] === null || game.alive[message.author.username].abilities.kill === null) return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
                         if (game.alive[args[1]] !== null && game.alive[message.author.username].abilities.kill !== null) {
                             return client.fetchUser(game.players[args[1]]).then(user => {
                                 user.send(game.alive[message.author.username].abilities.kill[1]);
@@ -266,9 +266,6 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
                     if (gameNow && listed) {
-                        message.reply("You have already joined the game.");
-                    }
-                    if (gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
@@ -295,6 +292,9 @@ client.on("message", async message => {
                         
                         // Send a message to the player with their role and the explanation
                         return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
+                    if (gameNow && listed) {
+                        message.reply("You have already joined the game.");
                     }
                     break;
                 case "leave":
