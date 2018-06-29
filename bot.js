@@ -15,9 +15,9 @@ var logs = [];
 // Store internal game data
 var game = {
     day: 0,
-    nightlyDead: [],
+    nightlyDead: {},
     alive: {},
-    dead: [],
+    dead: {},
     players: {},
     master: ""
 };
@@ -307,11 +307,11 @@ client.on("message", async message => {
                                 fields: [
                                     {
                                         name: "Users",
-                                        value: game.alive.join("\n")
+                                        value: Object.keys(game.alive).join("\n")
                                     },
                                     {
                                         name: "Number",
-                                        value: game.alive.length
+                                        value: Object.keys(game.alive).length
                                     }
                                 ],
                                 footer: {
