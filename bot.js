@@ -156,7 +156,7 @@ client.on("message", async message => {
             if (listed) {
                 switch (args[0]) {
                     case "kill":
-                        return console.log(roles.good[game.alive[message.author.username]].abilities);
+                        //console.log(roles.good[game.alive[message.author.username]].abilities);
                         
                         if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                         if (args[1] === null) return message.author.send("You must provide the username of your target.");
