@@ -162,14 +162,15 @@ client.on("message", async message => {
             if (listed) {
                 switch (args[0]) {
                     case "kill":
-                        if (args[1] === null) return message.author.send("You must provide the username of your target.");
+                        return console.log(roles.good[game.alive[message.author.username]]);
+                        /*if (args[1] === null) return message.author.send("You must provide the username of your target.");
                         if (roles.good[game.alive[message.author.username]].abilities.kill === null) return message.author.send("You do not have the ability to kill anyone.");
                         if (game.alive[args[1]] === null) return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
                         if (game.alive[args[1]] !== null && roles.good[game.alive[message.author.username]].abilities.kill === null) {
                             return client.fetchUser(game.players[args[1]]).then(user => {
                                 user.send(roles.good[game.alive[message.author.username]].abilities.kill[1]);
                             }).catch(error => message.author.send(`Failed to perform action: ${error}`));
-                        }
+                        }*/
                         break;
                     case "block":
                         return message.author.send("Blocking");
