@@ -12,7 +12,16 @@ const commands = require("./info/commands.json");
 const prefix = package.settings.prefix;
 var logs = [];
 
-// Store internal game data
+/*
+    Internal Game Data Keys
+    
+    day - The in-game day
+    nightlyDead - The players who died in the previous night; key: username, data: role
+    alive - The players who are alive; key: username, data: role
+    dead - The players who have died; key: username, data: role
+    players - The list of players; key: username, data: id
+    master - The Gamemaster
+*/
 var game = {
     day: 0,
     nightlyDead: {},
@@ -144,29 +153,33 @@ client.on("message", async message => {
     // Simple code that helps us separate the command and its arguments
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
+    // Check if the user is listed as alive
+    const listed = (game.alive[message.author.username] === null) ? false : true;
     
-    // Spent forever trying to get the bot to read DMs and then realized it's the same code as the other command stuff
+    // The commands that can be done in a DM
     switch (command) {
         case "action":
-            switch (args[0]) {
-                case "kill":
-                    if (game.alive[args[1]] !== null) {
-                        return client.fetchUser(game.players[args[1]]).then(user => {
-                            user.send("You died!");
-                        }).catch(error => message.author.send(`Failed to perform action: ${error}`));
-                    } else {
-                        return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
-                    }
-                    break;
-                case "block":
-                    return message.author.send("Blocking");
+            if (listed) {
+                switch (args[0]) {
+                    case "kill":
+                        if (game.alive[args[1]] !== null) {
+                            return client.fetchUser(game.players[args[1]]).then(user => {
+                                user.send(`You were killed by the ${game.alive[message.author.username]}`);
+                            }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+                        } else {
+                            return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
+                        }
+                        break;
+                    case "block":
+                        return message.author.send("Blocking");
+                }
+            } else {
+                message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
             }
     }
     
-    // Check if the user has the Gamemaster role (AKA rights)
+    // Check if the user has the Gamemaster role (commands requiring this info can never be done through DM)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
-    // Check if the user is listed as alive
-    const listed = (game.alive[message.author.username] === null) ? false : true;
     // Grab the playing role
     const playingRole = message.guild.roles.find("name", "Playing Game");
     
@@ -252,6 +265,9 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
                     if (gameNow && listed) {
+                        message.reply("You have already joined the game.");
+                    }
+                    if (gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
@@ -277,10 +293,7 @@ client.on("message", async message => {
                         var type = (roleType > 0 && roleType < 4) ? "good" : (roleType === 4) ? "evil" : "neutral";
                         
                         // Send a message to the player with their role and the explanation
-                        return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
-                    }
-                    if (gameNow && listed) {
-                        message.reply("You have already joined the game.");
+                        message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     break;
                 case "leave":
@@ -402,15 +415,15 @@ client.on("message", async message => {
                                     {
                                         name: "General",
                                         value: "Day " + game.day + "\n"
-                                            + "Died last night:\n" + (game.nightlyDead.length >= 1) ? game.nightlyDead.join("\n") : "None"
+                                            + "Died last night:\n" + (Object.keys(game.nightlyDead).length >= 1) ? Object.keys(game.nightlyDead).join("\n") : "None"
                                     },
                                     {
                                         name: "Alive",
-                                        value: (game.alive.length >= 1) ? game.alive.join("\n") : "None"
+                                        value: (Object.keys(game.alive).length >= 1) ? Object.keys(game.alive).join("\n") : "None"
                                     },
                                     {
                                         name: "Dead",
-                                        value: (game.dead.length >= 1) ? game.dead.join("\n") : "None"
+                                        value: (Object.keys(game.dead).length >= 1) ? Object.keys(game.dead).join("\n") : "None"
                                     }
                                 ],
                                 footer: {
@@ -453,7 +466,9 @@ client.on("message", async message => {
                 if (!deleteCount) message.reply("Please provide the number of messages to delete.");
                 else if (deleteCount < 2 || deleteCount > 100) message.reply("The number you provided is either too small or too large.");
 
-                const fetched = await message.channel.fetchMessages({limit: deleteCount});
+                const fetched = await message.channel.fetchMessages({
+                    limit: deleteCount
+                });
                 message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
                 console.log(`${message.member} cleared ${deleteCount} messages in ${message.channel}.`);
                 message.reply(`_Cleared ${deleteCount} messages._`);
