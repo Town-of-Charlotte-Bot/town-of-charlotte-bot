@@ -46,7 +46,6 @@ var game = {
 var roles = {
     good: {
         Investigator: {
-            state: null,
             txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
             abilities: {
                 clues: [Infinity]
@@ -58,7 +57,6 @@ var roles = {
             }
         },
         Jailor: {
-            state: null,
             txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
             abilities: {
                 lock: [Infinity, "You were locked up by the Jailor!"],
@@ -71,7 +69,6 @@ var roles = {
             }
         },
         Doctor: {
-            state: null,
             txt: "Heal 1 person each night, preventing them from dying.",
             abilities: {
                 revive: [Infinity]
@@ -85,7 +82,6 @@ var roles = {
     },
     evil: {
         Godfather: {
-            state: null,
             txt: "Selects target for mafia to kill, if no mafioso you will perform it.",
             abilities: {
                 kill: [Infinity, "You were killed by the Mafia!"]
@@ -97,7 +93,6 @@ var roles = {
             }
         },
         Mafioso: {
-            state: null,
             txt: "Carry out the Godfather's order and kill his target. Becomes Godfather if he dies.",
             abilities: {
                 
@@ -111,7 +106,6 @@ var roles = {
     },
     neutral: {
         "Serial Killer": {
-            state: null,
             txt: "Kills someone each night.",
             abilities: {
                 
@@ -164,12 +158,20 @@ client.on("message", async message => {
             if (listed) {
                 switch (args[0]) {
                     case "kill":
-                        if (game.alive[args[1]] !== null) {
+                        //console.log(roles.good[game.alive[message.author.username]].abilities);
+                        
+                        // No reason to type this out over and over
+                        const ability = roles.good[game.alive[message.author.username]].abilities.kill;
+                        
+                        if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
+                        if (args[1] === null) return message.author.send("You must provide the username of your target.");
+                        if (ability === undefined || ability[0] < 1) return message.author.send("You do not have the ability to kill anyone.");
+                        if (game.alive[args[1]] === null) return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
+                        if (game.alive[args[1]] !== null && ability[0] >= 1) {
                             return client.fetchUser(game.players[args[1]]).then(user => {
-                                user.send(`You were killed by the ${game.alive[message.author.username]}`);
+                                message.author.send(`_${args[1]} will be killed._`);
+                                user.send(ability[1]);
                             }).catch(error => message.author.send(`Failed to perform action: ${error}`));
-                        } else {
-                            return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
                         }
                         break;
                     case "block":
@@ -185,7 +187,7 @@ client.on("message", async message => {
     // Grab the playing role
     const playingRole = message.guild.roles.find("name", "Playing Game");
     
-    // All our commands
+    // All other non-DM commands
     switch (command) {
         case "help":
             message.channel.send({
@@ -267,9 +269,6 @@ client.on("message", async message => {
                 case "join":
                     if (!gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
                     if (gameNow && listed) {
-                        message.reply("You have already joined the game.");
-                    }
-                    if (gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
@@ -296,6 +295,9 @@ client.on("message", async message => {
                         
                         // Send a message to the player with their role and the explanation
                         return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                    }
+                    if (gameNow && listed) {
+                        message.reply("You have already joined the game.");
                     }
                     break;
                 case "leave":
