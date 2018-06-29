@@ -167,6 +167,7 @@ client.on("message", async message => {
                         if (game.alive[args[1]] === null) return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
                         if (game.alive[args[1]] !== null && ability[0] >= 1) {
                             return client.fetchUser(game.players[args[1]]).then(user => {
+                                message.author.send(`_${args[1]} will be killed._`);
                                 user.send(ability[1]);
                             }).catch(error => message.author.send(`Failed to perform action: ${error}`));
                         }
