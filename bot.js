@@ -154,11 +154,25 @@ client.on("message", async message => {
     switch (command) {
         case "action":
             if (listed) {
+                let gameAction = function(action) {
+                    const ability = roles.good[game.alive[message.author.username]].abilities[action];
+
+                    if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
+                    if (args[1] === null) return message.author.send("You must provide the username of your target.");
+                    if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
+                    if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+                    if (game.alive[args[1]] !== null && ability[0] >= 1) {
+                        return client.fetchUser(game.players[args[1]]).then(user => {
+                            message.author.send(`_${args[1]} will be ${action}ed._`);
+                            user.send(ability[1]);
+                        }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+                    }
+                };
+                
                 switch (args[0]) {
                     case "kill":
-                        //console.log(roles.good[game.alive[message.author.username]].abilities);
-                        
-                        // No reason to type this out over and over
+                        gameAction("kill");
+                        /*
                         const ability = roles.good[game.alive[message.author.username]].abilities.kill;
                         
                         if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
@@ -171,6 +185,7 @@ client.on("message", async message => {
                                 user.send(ability[1]);
                             }).catch(error => message.author.send(`Failed to perform action: ${error}`));
                         }
+                        */
                         break;
                     case "block":
                         return message.author.send("Blocking");
