@@ -31,22 +31,13 @@ var game = {
     master: ""
 };
 
-/*
-    Actions (so I can keep them straight):
-    lock - role-blocks target, protects from harm
-    block - role-blocks target
-    kill - kills target
-    clues - gives two options for target's role
-    revive - makes the target live
-*/
-
 // Simple database of all roles (thought about reading/writing to a JSON file, but this is easier)
 var roles = {
     good: {
         Investigator: {
             txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
             abilities: {
-                clues: [Infinity]
+                investigate: [Infinity]
             },
             immunity: {
                 night: false,
@@ -69,7 +60,7 @@ var roles = {
         Doctor: {
             txt: "Heal 1 person each night, preventing them from dying.",
             abilities: {
-                revive: [Infinity]
+                heal: [Infinity]
             },
             immunity: {
                 night: false,
@@ -154,13 +145,16 @@ client.on("message", async message => {
     switch (command) {
         case "action":
             if (listed) {
+                // Function with an action parameter that checks the command being given and performs it if both the sender and receiver meet certain qualifications
                 let gameAction = function(action) {
                     const ability = roles.good[game.alive[message.author.username]].abilities[action];
 
                     if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                     if (args[1] === null) return message.author.send("You must provide the username of your target.");
                     if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
-                    if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+                    // Simple variable that checks the action and returns different text if necessary, to make sure the return text is grammatically correct
+                    var actedTxt = (action === "investigate") ? "investigat" : action;
+                    if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${actedTxt}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                     if (game.alive[args[1]] !== null && ability[0] >= 1) {
                         return client.fetchUser(game.players[args[1]]).then(user => {
                             message.author.send(`_${args[1]} will be ${action}ed._`);
@@ -169,26 +163,26 @@ client.on("message", async message => {
                     }
                 };
                 
-                switch (args[0]) {
-                    case "kill":
-                        gameAction("kill");
-                        /*
-                        const ability = roles.good[game.alive[message.author.username]].abilities.kill;
-                        
-                        if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
-                        if (args[1] === null) return message.author.send("You must provide the username of your target.");
-                        if (ability === undefined || ability[0] < 1) return message.author.send("You do not have the ability to kill anyone.");
-                        if (game.alive[args[1]] === null) return message.author.send("That player could not be killed. Perhaps you spelled the name incorrectly, or the player is already dead.");
-                        if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                            return client.fetchUser(game.players[args[1]]).then(user => {
-                                message.author.send(`_${args[1]} will be killed._`);
-                                user.send(ability[1]);
-                            }).catch(error => message.author.send(`Failed to perform action: ${error}`));
-                        }
-                        */
+                /*
+                    Role Actions (so I can keep them straight):
+
+                    lock - role-blocks target, protects from harm
+                    block - role-blocks target
+                    kill - kills target
+                    investigate - gives two options for target's role
+                    heal - heals target
+                */
+                
+                let actionList = ["lock", "block", "kill", "investigate", "heal"];
+                
+                for (var i = 0; i < actionList.length; i++) {
+                    if (args[0] === actionList[i]) {
+                        gameAction(actionList[i]);
                         break;
-                    case "block":
-                        return message.author.send("Blocking");
+                    } else {
+                        return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+                        break;
+                    }
                 }
             } else {
                 message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
@@ -290,13 +284,13 @@ client.on("message", async message => {
                             case 1:
                             case 2:
                             case 3:
-                                game.alive[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length - 1))];
+                                game.alive[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length))];
                                 break;
                             case 4:
-                                game.alive[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length - 1))];
+                                game.alive[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length))];
                                 break;
                             case 5:
-                                game.alive[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length - 1))];
+                                game.alive[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length))];
                         }
                         if (roleType < 5) roleType++;
                         if (roleType >= 5) roleType = 1;
