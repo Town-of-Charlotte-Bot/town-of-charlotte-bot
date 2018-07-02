@@ -174,7 +174,7 @@ client.on("message", async message => {
                 let actionList = ["lock", "block", "kill", "investigate", "heal"];
                 
                 for (var i = 0; i < actionList.length; i++) {
-                    if (args[0] === actionList[i]) {
+                    if (args[0] == actionList[i]) {
                         gameAction(actionList[i]);
                     } else {
                         return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
