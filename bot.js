@@ -152,8 +152,7 @@ client.on("message", async message => {
                     if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                     if (args[1] === null) return message.author.send("You must provide the username of your target.");
                     if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
-                    var actedTxt = (action === "investigate") ? "investigat" : action;
-                    if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${actedTxt}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+                    if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                     if (game.alive[args[1]] !== null && ability[0] >= 1) {
                         return client.fetchUser(game.players[args[1]]).then(user => {
                             message.author.send(`_${args[1]} will be ${action}ed._`);
@@ -173,20 +172,19 @@ client.on("message", async message => {
                 */
                 let actionList = ["lock", "block", "kill", "investigate", "heal"];
                 
-                if (args[0] === actionList[0]) gameAction(actionList[0]);
-                if (args[0] === actionList[1]) gameAction(actionList[1]);
-                if (args[0] === actionList[2]) gameAction(actionList[2]);
-                if (args[0] === actionList[3]) gameAction(actionList[3]);
-                if (args[0] === actionList[4]) gameAction(actionList[4]);
-                else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+                /*if (args[0] === actionList[0]) gameAction(actionList[0]);
+                else if (args[0] === actionList[1]) gameAction(actionList[1]);
+                else if (args[0] === actionList[2]) gameAction(actionList[2]);
+                else if (args[0] === actionList[3]) gameAction(actionList[3]);
+                else if (args[0] === actionList[4]) gameAction(actionList[4]);
+                else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
                 
-                /*for (var i = 0; i < actionList.length; i++) {
-                    if (args[0] == actionList[i]) {
+                for (var i = 0; i < actionList.length; i++) {
+                    if (args[0] === actionList[i]) {
                         gameAction(actionList[i]);
-                    } else {
-                        return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
                     }
-                }*/
+                }
+                else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
             } else {
                 message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
             }
