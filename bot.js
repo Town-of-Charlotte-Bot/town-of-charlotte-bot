@@ -172,21 +172,14 @@ client.on("message", async message => {
                 */
                 let actionList = ["lock", "block", "kill", "investigate", "heal"];
                 
-                /*if (args[0] === actionList[0]) gameAction(actionList[0]);
+                if (args[0] === actionList[0]) gameAction(actionList[0]);
                 else if (args[0] === actionList[1]) gameAction(actionList[1]);
                 else if (args[0] === actionList[2]) gameAction(actionList[2]);
                 else if (args[0] === actionList[3]) gameAction(actionList[3]);
                 else if (args[0] === actionList[4]) gameAction(actionList[4]);
-                else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
-                
-                for (var i = 0; i < actionList.length; i++) {
-                    if (args[0] === actionList[i]) {
-                        gameAction(actionList[i]);
-                    }
-                }
                 else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
             } else {
-                message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
+                return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
             }
     }
     
