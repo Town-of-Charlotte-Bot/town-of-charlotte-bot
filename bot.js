@@ -146,7 +146,7 @@ client.on("message", async message => {
         case "action":
             if (listed) {
                 // Function with an action parameter that checks the command being given and performs it if both the sender and receiver meet certain qualifications
-                let gameAction = function(action) {
+                let gameAction = function(action, msgTarget) {
                     const ability = roles.good[game.alive[message.author.username]].abilities[action];
 
                     if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
@@ -154,9 +154,12 @@ client.on("message", async message => {
                     if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                     if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                     if (game.alive[args[1]] !== null && ability[0] >= 1) {
+                        client.fetchUser(game.master).then(master => {
+                            master.send(`${message.author.username} ${action}ed ${args[1]}.`);
+                        }).catch(error => message.author.send(`Failed to perform action: ${error}`));
                         return client.fetchUser(game.players[args[1]]).then(user => {
                             message.author.send(`_${args[1]} will be ${action}ed._`);
-                            user.send(ability[1]);
+                            if (ability[1] !== undefined) user.send(ability[1]);
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
                     }
                 };
@@ -170,13 +173,11 @@ client.on("message", async message => {
                     investigate - gives two options for target's role
                     heal - heals target
                 */
-                let actionList = ["lock", "block", "kill", "investigate", "heal"];
-                
-                if (args[0] === actionList[0]) gameAction(actionList[0]);
-                else if (args[0] === actionList[1]) gameAction(actionList[1]);
-                else if (args[0] === actionList[2]) gameAction(actionList[2]);
-                else if (args[0] === actionList[3]) gameAction(actionList[3]);
-                else if (args[0] === actionList[4]) gameAction(actionList[4]);
+                if (args[0] === "lock") gameAction("lock");
+                else if (args[0] === "block") gameAction("block");
+                else if (args[0] === "kill") gameAction("kill");
+                else if (args[0] === "investigate") gameAction("investigate");
+                else if (args[0] === "heal") gameAction("heal");
                 else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
             } else {
                 return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
