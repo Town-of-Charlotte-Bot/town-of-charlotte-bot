@@ -6,3 +6,7 @@
  - Make sure actions cannot be taken by the player unless they are in the current game and alive
  - Redo method for assigning roles, so that *after* the game has begun the roles are assigned (to make sure roles like GF are always in the game *but* assigned randomly)
  - Set a minimum players count, so that enough players have to join before a game can begin (and some way to cancel if there aren't enough)
+ - For action commands, make everythign after the second parameter part of the same argument, so that usernames with spaces aren't split
+ - Add support for multiple concurrent games
+ - Prevent multiple people from being lynched in the same day, and only lynching after the first day
+ - Psychopath wins with whichever team wins (not immediately after their target is lynched)
