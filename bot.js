@@ -28,7 +28,16 @@ var game = {
     alive: {},
     dead: {},
     players: {},
-    master: ""
+    master: "",
+    actions: {
+        p5: {},
+        p4: {},
+        p3: {},
+        p2: {},
+        p1: {},
+        p0: {},
+        p-1: {}
+    }
 };
 
 // Simple database of all roles (thought about reading/writing to a JSON file, but this is easier)
@@ -36,6 +45,7 @@ var roles = {
     good: {
         Investigator: {
             txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
+            priority: "p1",
             abilities: {
                 investigate: [Infinity]
             },
@@ -47,6 +57,7 @@ var roles = {
         },
         Jailor: {
             txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
+            priority: "p4",
             abilities: {
                 lock: [Infinity, "You were locked up by the Jailor!"],
                 kill: [1, "You were executed by the Jailor!"]
@@ -59,6 +70,7 @@ var roles = {
         },
         Doctor: {
             txt: "Heal 1 person each night, preventing them from dying.",
+            priority: "p2",
             abilities: {
                 heal: [Infinity]
             },
@@ -72,6 +84,7 @@ var roles = {
     evil: {
         Godfather: {
             txt: "Selects target for mafia to kill, if no mafioso you will perform it.",
+            priority: "p3",
             abilities: {
                 kill: [Infinity, "You were killed by the Mafia!"]
             },
@@ -83,6 +96,7 @@ var roles = {
         },
         Mafioso: {
             txt: "Carry out the Godfather's order and kill his target. Becomes Godfather if he dies.",
+            priority: "p3",
             abilities: {
                 
             },
@@ -146,7 +160,7 @@ client.on("message", async message => {
         case "action":
             if (listed) {
                 // Function with an action parameter that checks the command being given and performs it if both the sender and receiver meet certain qualifications
-                let gameAction = function(action, msgTarget) {
+                let gameAction = function(action) {
                     const ability = roles.good[game.alive[message.author.username]].abilities[action];
 
                     if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
@@ -154,9 +168,7 @@ client.on("message", async message => {
                     if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                     if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                     if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                        /*client.fetchUser(game.master).then(master => {
-                            master.send(`${message.author.username} ${action}ed ${args[1]}.`);
-                        }).catch(error => message.author.send(`Failed to perform action: ${error}`));*/
+                        game.actions[roles.good[game.alive[message.author.username]].priority][message.author.username] = action;
                         return client.fetchUser(game.players[args[1]]).then(user => {
                             message.author.send(`_${args[1]} will be ${action}ed._`);
                             if (ability[1] !== undefined) user.send(ability[1]);
