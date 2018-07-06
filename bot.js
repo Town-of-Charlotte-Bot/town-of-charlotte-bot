@@ -170,6 +170,7 @@ client.on("message", async message => {
                     if (game.alive[args[1]] !== null && ability[0] >= 1) {
                         game.actions[roles.good[game.alive[message.author.username]].priority][message.author.username] = action;
                         return client.fetchUser(game.players[args[1]]).then(user => {
+                            message.author.send(game.actions);
                             message.author.send(`_${args[1]} will be ${action}ed._`);
                             if (ability[1] !== undefined) user.send(ability[1]);
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
