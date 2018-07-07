@@ -40,137 +40,119 @@ var game = {
     }
 };
 
-// Simple database of all roles (thought about reading/writing to a JSON file, but this is easier)
 var roles = {
-    good: {
-        Investigator: {
-            txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
-            priority: "p1",
-            abilities: {
-                investigate: [Infinity]
-            },
-            immunity: {
-                night: false,
-                bite: false,
-                detect: false
-            }
+    Investigator: {
+        txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
+        priority: "p1",
+        abilities: {
+            investigate: [Infinity]
         },
-        Jailor: {
-            txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
-            priority: "p4",
-            abilities: {
-                lock: [Infinity, "You were locked up by the Jailor!"],
-                kill: [1, "You were executed by the Jailor!"]
-            },
-            immunity: {
-                night: false,
-                bite: false,
-                detect: false
-            }
-        },
-        Doctor: {
-            txt: "Heal 1 person each night, preventing them from dying.",
-            priority: "p2",
-            abilities: {
-                heal: [Infinity]
-            },
-            immunity: {
-                night: false,
-                bite: false,
-                detect: false
-            }
+        immunity: {
+            night: false,
+            bite: false,
+            detect: false
         }
     },
-    evil: {
-        Godfather: {
-            txt: "Selects target for mafia to kill, if no mafioso you will perform it.",
-            priority: "p3",
-            abilities: {
-                kill: [Infinity, "You were killed by the Mafia!"]
-            },
-            immunity: {
-                night: true,
-                bite: true,
-                detect: true
-            }
+    Jailor: {
+        txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
+        priority: "p4",
+        abilities: {
+            lock: [Infinity, "You were locked up by the Jailor!"],
+            kill: [1, "You were executed by the Jailor!"]
         },
-        Mafioso: {
-            txt: "Carry out the Godfather's order and kill his target. Becomes Godfather if he dies.",
-            priority: "p3",
-            abilities: {
-                
-            },
-            immunity: {
-                night: true,
-                bite: true,
-                detect: true
-            }
+        immunity: {
+            night: false,
+            bite: false,
+            detect: false
         }
     },
-    neutral: {
-        "Serial Killer": {
-            txt: "Kills someone each night.",
-            abilities: {
-                
-            },
-            immunity: {
-                night: true,
-                bite: true,
-                detect: true
-            },
-            wins: "solo"
+    Doctor: {
+        txt: "Heal 1 person each night, preventing them from dying.",
+        priority: "p2",
+        abilities: {
+            heal: [Infinity]
+        },
+        immunity: {
+            night: false,
+            bite: false,
+            detect: false
         }
+    },
+    Godfather: {
+        txt: "Selects target for mafia to kill, if no mafioso you will perform it.",
+        priority: "p3",
+        abilities: {
+            kill: [Infinity, "You were killed by the Mafia!"]
+        },
+        immunity: {
+            night: true,
+            bite: true,
+            detect: true
+        }
+    },
+    Mafioso: {
+        txt: "Carry out the Godfather's order and kill his target. Becomes Godfather if he dies.",
+        priority: "p3",
+        abilities: {
+
+        },
+        immunity: {
+            night: true,
+            bite: true,
+            detect: true
+        }
+    },
+    "Serial Killer": {
+        txt: "Kills someone each night.",
+        priority: "p3",
+        abilities: {
+
+        },
+        immunity: {
+            night: true,
+            bite: true,
+            detect: true
+        },
+        wins: "solo"
     }
 };
 
-// Iterates to represent which type of role is being given, the ratio being 3 good to 1 evil to 1 neutral
 var roleType = 1;
 
-// Boolean that triggers if a game is available for joining
 var gameNow = false;
-// Boolean that triggers if a game is being played
 var playing  = false;
 
-// When the bot loads
 client.on("ready", () => {
+    client.user.setGame("Town of Charlotte");
     console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
-    //client.user.setGame("Town of Charlotte");
 });
 
-// Debugging
 client.on("debug", debug => {
     logs.push(debug);
 });
 
 // When a message is posted
 client.on("message", async message => {
-    // Ignore bots
     if (message.author.bot) return;
-    // Ignore anything that isn't a command (doesn't start with the prefix)
     if (message.content.indexOf(prefix) !== 0) return;
     
-    // Simple code that helps us separate the command and its arguments
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
-    // Check if the user is listed as alive
     const listed = (game.alive[message.author.username] === null) ? false : true;
     
-    // The commands that can be done in a DM
     switch (command) {
         case "action":
             if (listed) {
-                // Function with an action parameter that checks the command being given and performs it if both the sender and receiver meet certain qualifications
                 let gameAction = function(action) {
-                    const ability = roles.good[game.alive[message.author.username]].abilities[action];
+                    const ability = roles[game.alive[message.author.username]].abilities[action];
 
                     if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                     if (args[1] === null) return message.author.send("You must provide the username of your target.");
                     if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                     if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                     if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                        game.actions[roles.good[game.alive[message.author.username]].priority][message.author.username] = action;
+                        game.actions[roles[game.alive[message.author.username]].priority][message.author.username] = action;
                         return client.fetchUser(game.players[args[1]]).then(user => {
-                            message.author.send(game.actions);
                             message.author.send(`_${args[1]} will be ${action}ed._`);
                             if (ability[1] !== undefined) user.send(ability[1]);
                         }).catch(error => message.author.send(`Failed to perform action: ${error}`));
@@ -197,12 +179,9 @@ client.on("message", async message => {
             }
     }
     
-    // Check if the user has the Gamemaster role (commands requiring this info can never be done through DM)
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
-    // Grab the playing role
     const playingRole = message.guild.roles.find("name", "Playing Game");
     
-    // All other non-DM commands
     switch (command) {
         case "help":
             message.channel.send({
@@ -217,7 +196,8 @@ client.on("message", async message => {
                             name: "General",
                             value: "`help` - Lists bot commands\n"
                                 + "`ping` - Ping the bot, and receive a latency check\n"
-                                + "`info` - Gives info about the _Town of Charlotte_ game and how to play"
+                                + "`info` - Gives info about the _Town of Charlotte_ game and how to play\n"
+                                + "`tip` - Get a random gameplay tip"
                         },
                         {
                             name: "In-Game",
@@ -279,6 +259,9 @@ client.on("message", async message => {
                 }
             }).catch(error => message.reply(`Failed to perform action: ${error}`));
             break;
+        case "tip":
+            // Get a random gameplay tip!
+            break;
         case "game":
             switch (args[0]) {
                 case "join":
@@ -286,30 +269,22 @@ client.on("message", async message => {
                     if (gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
-                        
-                        // The iterating thing that decides what role is being given (need to rewrite all this)
+                        // REWRITE THE FOLLOWING
                         switch (roleType) {
                             case 1:
                             case 2:
                             case 3:
-                                game.alive[message.author.username] = Object.keys(roles.good)[Math.round(Math.random(0, roles.length))];
+                                game.alive[message.author.username] = Object.keys(roles)[Math.floor(Math.random() * roles.length)];
                                 break;
                             case 4:
-                                game.alive[message.author.username] = Object.keys(roles.evil)[Math.round(Math.random(0, roles.length))];
+                                game.alive[message.author.username] = Object.keys(roles)[Math.floor(Math.random() * roles.length)];
                                 break;
                             case 5:
-                                game.alive[message.author.username] = Object.keys(roles.neutral)[Math.round(Math.random(0, roles.length))];
+                                game.alive[message.author.username] = Object.keys(roles)[Math.floor(Math.random() * roles.length)];
                         }
-                        if (roleType < 5) roleType++;
-                        if (roleType >= 5) roleType = 1;
-                        
                         message.channel.send(`_${message.author} has joined the game._`);
                         
-                        // Check roleType and return the appropriate string
-                        var type = (roleType > 0 && roleType < 4) ? "good" : (roleType === 4) ? "evil" : "neutral";
-                        
-                        // Send a message to the player with their role and the explanation
-                        return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[type][game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && listed) {
                         message.reply("You have already joined the game.");
@@ -385,7 +360,6 @@ client.on("message", async message => {
                     if (role && !gameNow && playing) {
                         gameNow = false;
                         playing = false;
-                        // Reset the game object
                         game = {
                             day: 0,
                             nightlyDead: [],
