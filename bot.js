@@ -97,9 +97,9 @@ var roles = {
 
         },
         immunity: {
-            night: true,
-            bite: true,
-            detect: true
+            night: false,
+            bite: false,
+            detect: false
         }
     },
     "Serial Killer": {
@@ -111,7 +111,7 @@ var roles = {
         immunity: {
             night: true,
             bite: true,
-            detect: true
+            detect: false
         },
         wins: "solo"
     }
