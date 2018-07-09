@@ -132,7 +132,9 @@ var Player = function(username, role) {
     this.infoText = roles[this.role].txt;
     this.priority = roles[this.role].priority;
     this.getAbilities = roles[this.role].abilities;
-    this.hasImmunity = roles[this.role].immunity[type];
+    this.hasImmunity = function(type) {
+        return roles[this.role].immunity[type];
+    };
     this.isAlive = (game.alive.indexOf(this.username) === -1) ? false : true;
     this.isDead = (game.dead.indexOf(this.username) === -1) ? false : true;
 };
