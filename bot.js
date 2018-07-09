@@ -292,10 +292,10 @@ client.on("message", async message => {
                     if (setup.gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
-                        setup.addPlayer(message.author.username);
+                        game.alive[message.author.username] = new Player("Jailor");
                         message.channel.send(`_${message.author} has joined the game._`);
                         
-                        return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        return message.author.send(`Your role is _${game.alive[message.author.username].role}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (setup.gameNow && listed) {
                         message.reply("You have already joined the game.");
