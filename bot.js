@@ -121,8 +121,8 @@ var setup = {
     roleType: 1,
     gameNow: false,
     playing: false,
-    addPlayer: function(name) {
-        return game.alive[name] = new Player("Jailor");
+    addPlayer: function(name, role) {
+        return game.alive[name] = new Player(name, role);
     }
 };
 
@@ -138,17 +138,17 @@ var Player = function(username, role) {
     this.isAlive = (Object.keys(game.alive).indexOf(this.username) === -1) ? false : true;
     this.isDead = (Object.keys(game.dead).indexOf(this.username) === -1) ? false : true;
 };
-Player.prototype.takeAction = function(action, target) {
-    if (!this.isAlive) return message.author.send("You are not playing in the current game.");
-    if (target === null || target === undefined) return message.author.send("You must provide the username of your target.");
-    if (this.getAbilities === undefined || this.getAbilities[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
-    if (game.alive[target] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+Player.prototype.takeAction = function(sender, action, target) {
+    if (!this.isAlive) return sender.send("You are not playing in the current game.");
+    if (target === null || target === undefined) return sender.send("You must provide the username of your target.");
+    if (this.getAbilities === undefined || this.getAbilities[0] < 1) return sender.send(`You do not have the ability to ${action} anyone.`);
+    if (game.alive[target] === null) return sender.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
     if (game.alive[target] !== null && this.getAbilities[0] >= 1) {
         game.actions[this.priority][this.username] = action;
         client.fetchUser(game.players[target]).then(user => {
             if (this.getAbilities[1] !== undefined) user.send(this.getAbilities[1]);
-            return message.author.send(`_${target} will be ${action}ed._`);
-        }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+            return sender.send(`_${target} will be ${action}ed._`);
+        }).catch(error => sender.send(`Failed to perform action: ${error}`));
     }
 };
 
@@ -188,7 +188,7 @@ client.on("message", async message => {
                 if (args[0] === roleActions[i]) return game.alive[message.author.username].takeAction(args[0], args[1]);
             }
             if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
-            if (args[0] === "investigate") return game.alive[message.author.username].takeAction(args[0], args[1]);
+            if (args[0] === "lock") return game.alive[message.author.username].takeAction(message.author, args[0], args[1]);
             return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
         } else {
             return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
