@@ -126,14 +126,15 @@ var setup = {
     }
 };
 
-var Player = function(role) {
+var Player = function(username, role) {
+    this.username = username;
     this.role = role;
-    this.infoText = roles[game.alive[message.author.username]].txt;
-    this.priority = roles[game.alive[message.author.username]].priority;
-    this.getAbilities = roles[game.alive[message.author.username]].abilities;
-    this.hasImmunity = roles[game.alive[message.author.username]].immunity[type];
-    this.isAlive = (game.alive.indexOf(message.author.username) === -1) ? false : true;
-    this.isDead = (game.dead.indexOf(message.author.username) === -1) ? false : true;
+    this.infoText = roles[game.alive[this.username]].txt;
+    this.priority = roles[game.alive[this.username]].priority;
+    this.getAbilities = roles[game.alive[this.username]].abilities;
+    this.hasImmunity = roles[game.alive[this.username]].immunity[type];
+    this.isAlive = (game.alive.indexOf(this.username) === -1) ? false : true;
+    this.isDead = (game.dead.indexOf(this.username) === -1) ? false : true;
 };
 Player.prototype.takeAction = function(action, target) {
     if (!this.isAlive) return message.author.send("You are not playing in the current game.");
@@ -141,7 +142,7 @@ Player.prototype.takeAction = function(action, target) {
     if (this.getAbilities === undefined || this.getAbilities[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
     if (game.alive[target] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
     if (game.alive[target] !== null && this.getAbilities[0] >= 1) {
-        game.actions[this.priority][this] = action;
+        game.actions[this.priority][this.username] = action;
         client.fetchUser(game.players[target]).then(user => {
             if (this.getAbilities[1] !== undefined) user.send(this.getAbilities[1]);
             return message.author.send(`_${target} will be ${action}ed._`);
@@ -280,7 +281,7 @@ client.on("message", async message => {
                     if (setup.gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
-                        game.alive[message.author.username] = new Player("Jailor");
+                        game.alive[message.author.username] = new Player(message.author.username, "Jailor");
                         message.channel.send(`_${message.author} has joined the game._`);
                         
                         return message.author.send(`Your role is _${game.alive[message.author.username].role}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
