@@ -183,11 +183,13 @@ client.on("message", async message => {
                 heal - heals target
             */
             const roleActions = ["lock", "block", "kill", "investigate", "heal"];
-            var i = 0;
+            /*var i = 0;
             while (i < roleActions.length) {
                 if (args[0] === roleActions[i]) return game.alive[message.author.username].takeAction(args[0], args[1]);
             }
-            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
+            if (args[0] === "investigate") return game.alive[message.author.username].takeAction(args[0], args[1]);
+            return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
         } else {
             return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
         }
