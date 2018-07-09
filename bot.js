@@ -175,7 +175,7 @@ client.on("message", async message => {
     if (message.author.bot) return;
     if (message.content.indexOf(prefix) !== 0) return;
     
-    const message.author.username = message.author.username.replace(/ /g, "_");
+    const displayedName = message.author.username.replace(/ /g, "_");
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
