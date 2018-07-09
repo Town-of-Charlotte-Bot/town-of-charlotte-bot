@@ -12,34 +12,6 @@ const commands = require("./info/commands.json");
 const prefix = package.settings.prefix;
 var logs = [];
 
-/*
-    Internal Game Data Keys
-    
-    day - The in-game day
-    nightlyDead - The players who died in the previous night; key: username, data: role
-    alive - The players who are alive; key: username, data: role
-    dead - The players who have died; key: username, data: role
-    players - The list of players; key: username, data: id
-    master - The Gamemaster
-*/
-var game = {
-    day: 0,
-    nightlyDead: {},
-    alive: {},
-    dead: {},
-    players: {},
-    master: "",
-    actions: {
-        p5: {},
-        p4: {},
-        p3: {},
-        p2: {},
-        p1: {},
-        p0: {},
-        p_1: {}
-    }
-};
-
 var roles = {
     Investigator: {
         txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
@@ -117,10 +89,78 @@ var roles = {
     }
 };
 
-var roleType = 1;
+/*
+    Internal Game Data Keys
+    
+    day - The in-game day
+    nightlyDead - The players who died in the previous night; key: username, data: role
+    alive - The players who are alive; key: username, data: role
+    dead - The players who have died; key: username, data: role
+    players - The list of players; key: username, data: id
+    master - The Gamemaster
+    actions - The actions taken during the previous/current night; key: 
+*/
+var game = {
+    day: 0,
+    nightlyDead: [],
+    alive: {},
+    dead: {},
+    players: {},
+    master: "",
+    actions: {
+        p5: {},
+        p4: {},
+        p3: {},
+        p2: {},
+        p1: {},
+        p0: {},
+        p_1: {}
+    }
+};
 
-var gameNow = false;
-var playing  = false;
+var setup = {
+    roleType: 1,
+    gameNow: false,
+    playing: false,
+    addPlayer: function(name) {
+        return game.alive[name] = new Player("Jailor");
+    }
+};
+
+var Player = function(role) {
+    this.role = role;
+};
+Player.prototype.infoText = function() {
+    return roles[game.alive[this]].txt;
+};
+Player.prototype.priority = function() {
+    return roles[game.alive[this]].priority;
+};
+Player.prototype.getAbilities = function() {
+    return roles[game.alive[this]].abilities;
+};
+Player.prototype.hasImmunity = function(type) {
+    return roles[game.alive[this]].immunity[type];
+};
+Player.prototype.isAlive = function() {
+    return (game.alive.indexOf(this) === -1) ? false : true;
+};
+Player.prototype.isDead = function() {
+    return (game.dead.indexOf(this) === -1) ? false : true;
+};
+Player.prototype.takeAction = function(action, target) {
+    if (!this.isAlive) return message.author.send("You are not playing in the current game.");
+    if (target === null || target === undefined) return message.author.send("You must provide the username of your target.");
+    if (this.getAbilities === undefined || this.getAbilities[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
+    if (game.alive[target] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+    if (game.alive[target] !== null && this.getAbilities[0] >= 1) {
+        game.actions[this.priority][this] = action;
+        client.fetchUser(game.players[target]).then(user => {
+            if (this.getAbilities[1] !== undefined) user.send(this.getAbilities[1]);
+            return message.author.send(`_${target} will be ${action}ed._`);
+        }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+    }
+};
 
 client.on("ready", () => {
     client.user.setGame("Town of Charlotte");
@@ -131,52 +171,36 @@ client.on("debug", debug => {
     logs.push(debug);
 });
 
-// When a message is posted
 client.on("message", async message => {
     if (message.author.bot) return;
     if (message.content.indexOf(prefix) !== 0) return;
+    
+    const message.author.username = message.author.username.replace(/ /g, "_");
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     const listed = (game.alive[message.author.username] === null) ? false : true;
     
-    switch (command) {
-        case "action":
-            if (listed) {
-                let gameAction = function(action) {
-                    const ability = roles[game.alive[message.author.username]].abilities[action];
+    if (command === "action") {
+        if (listed) {
+            /*
+                Role Actions:
 
-                    if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
-                    if (args[1] === null) return message.author.send("You must provide the username of your target.");
-                    if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
-                    if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
-                    if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                        game.actions[roles[game.alive[message.author.username]].priority][message.author.username] = action;
-                        return client.fetchUser(game.players[args[1]]).then(user => {
-                            message.author.send(`_${args[1]} will be ${action}ed._`);
-                            if (ability[1] !== undefined) user.send(ability[1]);
-                        }).catch(error => message.author.send(`Failed to perform action: ${error}`));
-                    }
-                };
-                
-                /*
-                    Role Actions (so I can keep them straight):
-
-                    lock - role-blocks target, protects from harm
-                    block - role-blocks target
-                    kill - kills target
-                    investigate - gives two options for target's role
-                    heal - heals target
-                */
-                if (args[0] === "lock") gameAction("lock");
-                else if (args[0] === "block") gameAction("block");
-                else if (args[0] === "kill") gameAction("kill");
-                else if (args[0] === "investigate") gameAction("investigate");
-                else if (args[0] === "heal") gameAction("heal");
-                else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
-            } else {
-                return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
+                lock - role-blocks target, protects from harm
+                block - role-blocks target
+                kill - kills target
+                investigate - gives two options for target's role
+                heal - heals target
+            */
+            const roleActions = ["lock", "block", "kill", "investigate", "heal"];
+            var i = 0;
+            while (i < roleActions.length) {
+                if (args[0] === roleActions[i]) return game.alive[message.author.username].takeAction(args[0], args[1]);
             }
+            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+        } else {
+            return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
+        }
     }
     
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
@@ -269,22 +293,10 @@ client.on("message", async message => {
                     if (gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
-                        // REWRITE THE FOLLOWING
-                        switch (roleType) {
-                            case 1:
-                            case 2:
-                            case 3:
-                                game.alive[message.author.username] = Object.keys(roles)[Math.floor(Math.random() * roles.length)];
-                                break;
-                            case 4:
-                                game.alive[message.author.username] = Object.keys(roles)[Math.floor(Math.random() * roles.length)];
-                                break;
-                            case 5:
-                                game.alive[message.author.username] = Object.keys(roles)[Math.floor(Math.random() * roles.length)];
-                        }
+                        setup.addPlayer(message.author.username);
                         message.channel.send(`_${message.author} has joined the game._`);
                         
-                        return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${roles[game.alive[message.author.username]].txt}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (gameNow && listed) {
                         message.reply("You have already joined the game.");
@@ -410,7 +422,7 @@ client.on("message", async message => {
                                     {
                                         name: "General",
                                         value: "Day " + game.day + "\n"
-                                            + "Died last night:\n" + (Object.keys(game.nightlyDead).length >= 1) ? Object.keys(game.nightlyDead).join("\n") : "None"
+                                            + "Died last night:\n" + (game.nightlyDead.length >= 1) ? game.nightlyDead.join("\n") : "None"
                                     },
                                     {
                                         name: "Alive",
