@@ -128,12 +128,12 @@ var setup = {
 
 var Player = function(role) {
     this.role = role;
-    this.infoText = roles[game.alive[this]].txt;
-    this.priority = roles[game.alive[this]].priority;
-    this.getAbilities = roles[game.alive[this]].abilities;
-    this.hasImmunity = roles[game.alive[this]].immunity[type];
-    this.isAlive = (game.alive.indexOf(this) === -1) ? false : true;
-    this.isDead = (game.dead.indexOf(this) === -1) ? false : true;
+    this.infoText = roles[game.alive[message.author.username]].txt;
+    this.priority = roles[game.alive[message.author.username]].priority;
+    this.getAbilities = roles[game.alive[message.author.username]].abilities;
+    this.hasImmunity = roles[game.alive[message.author.username]].immunity[type];
+    this.isAlive = (game.alive.indexOf(message.author.username) === -1) ? false : true;
+    this.isDead = (game.dead.indexOf(message.author.username) === -1) ? false : true;
 };
 Player.prototype.takeAction = function(action, target) {
     if (!this.isAlive) return message.author.send("You are not playing in the current game.");
