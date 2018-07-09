@@ -129,10 +129,10 @@ var setup = {
 var Player = function(username, role) {
     this.username = username;
     this.role = role;
-    this.infoText = roles[game.alive[this.username]].txt;
-    this.priority = roles[game.alive[this.username]].priority;
-    this.getAbilities = roles[game.alive[this.username]].abilities;
-    this.hasImmunity = roles[game.alive[this.username]].immunity[type];
+    this.infoText = roles[this.role].txt;
+    this.priority = roles[this.role].priority;
+    this.getAbilities = roles[this.role].abilities;
+    this.hasImmunity = roles[this.role].immunity[type];
     this.isAlive = (game.alive.indexOf(this.username) === -1) ? false : true;
     this.isDead = (game.dead.indexOf(this.username) === -1) ? false : true;
 };
