@@ -4,7 +4,6 @@
     https://anidiotsguide_old.gitbooks.io/discord-js-bot-guide/content/information/understanding-asyncawait.html
 */
 
-// What we need to start off with
 const Discord = require("discord.js");
 const client = new Discord.Client();
 const package = require("./package.json");
@@ -304,7 +303,7 @@ client.on("message", async message => {
                     break;
                 case "leave":
                     if (setup.gameNow && listed) return message.reply("You may not leave until the game has begun.");
-                    if (playing && listed) {
+                    if (setup.playing && listed) {
                         delete game.players[message.author.username];
                         delete game.alive[message.author.username];
                         message.member.removeRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -314,8 +313,8 @@ client.on("message", async message => {
                     if (listed) return message.reply("There is no game for you to leave.");
                     break;
                 case "players":
-                    if ((!setup.gameNow && !playing) || game.alive.length < 1) message.reply("There are no players to show. Perhaps a game has not been started, or there are no players yet in the current game.");
-                    else if (setup.gameNow || playing) {
+                    if ((!setup.gameNow && !setup.playing) || game.alive.length < 1) message.reply("There are no players to show. Perhaps a game has not been started, or there are no players yet in the current game.");
+                    else if (setup.gameNow || setup.playing) {
                         message.channel.send({
                             embed: {
                                 //color: 3447003,
@@ -342,8 +341,8 @@ client.on("message", async message => {
                     break;
                 case "start":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (setup.gameNow || playing)) message.reply("There is already a game in progress.");
-                    if (role && !setup.gameNow && !playing) {
+                    if (role && (setup.gameNow || setup.playing)) message.reply("There is already a game in progress.");
+                    if (role && !setup.gameNow && !setup.playing) {
                         setup.gameNow = true;
                         game.master = message.author.username;
                         message.author.send("You are the Gamemaster for the current game. After each night the action log will be DMed to you, and during the game you can view secret stats about the players.");
@@ -368,10 +367,10 @@ client.on("message", async message => {
                     break;
                 case "end":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (setup.gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
-                    if (role && !setup.gameNow && playing) {
+                    if (role && (setup.gameNow || !setup.playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
+                    if (role && !setup.gameNow && setup.playing) {
                         setup.gameNow = false;
-                        playing = false;
+                        setup.playing = false;
                         game = {
                             day: 0,
                             nightlyDead: [],
@@ -388,7 +387,7 @@ client.on("message", async message => {
                     if (role && !setup.gameNow) message.reply("There is no current game to begin.");
                     if (role && setup.gameNow) {
                         setup.gameNow = false;
-                        playing = true;
+                        setup.playing = true;
                         message.channel.send({
                             embed: {
                                 //color: 3447003,
@@ -409,8 +408,8 @@ client.on("message", async message => {
                     }
                     break;
                 case "stats":
-                    if (!playing) message.reply("There is no current game to show the stats of.");
-                    if (playing) {
+                    if (!setup.playing) message.reply("There is no current game to show the stats of.");
+                    if (setup.playing) {
                         message.channel.send({
                             embed: {
                                 //color: 3447003,
