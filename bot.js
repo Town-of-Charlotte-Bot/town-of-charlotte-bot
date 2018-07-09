@@ -135,8 +135,8 @@ var Player = function(username, role) {
     this.hasImmunity = function(type) {
         return roles[this.role].immunity[type];
     };
-    this.isAlive = (Object.keys(game.alive.indexOf(this.username)) === -1) ? false : true;
-    this.isDead = (Object.keys(game.dead.indexOf(this.username)) === -1) ? false : true;
+    this.isAlive = (Object.keys(game.alive).indexOf(this.username) === -1) ? false : true;
+    this.isDead = (Object.keys(game.dead).indexOf(this.username) === -1) ? false : true;
 };
 Player.prototype.takeAction = function(action, target) {
     if (!this.isAlive) return message.author.send("You are not playing in the current game.");
