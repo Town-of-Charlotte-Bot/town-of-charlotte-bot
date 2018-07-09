@@ -289,8 +289,8 @@ client.on("message", async message => {
         case "game":
             switch (args[0]) {
                 case "join":
-                    if (!gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
-                    if (gameNow && listed) {
+                    if (!setup.gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
+                    if (setup.gameNow && listed) {
                         game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         setup.addPlayer(message.author.username);
@@ -298,12 +298,12 @@ client.on("message", async message => {
                         
                         return message.author.send(`Your role is _${game.alive[message.author.username]}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
-                    if (gameNow && listed) {
+                    if (setup.gameNow && listed) {
                         message.reply("You have already joined the game.");
                     }
                     break;
                 case "leave":
-                    if (gameNow && listed) return message.reply("You may not leave until the game has begun.");
+                    if (setup.gameNow && listed) return message.reply("You may not leave until the game has begun.");
                     if (playing && listed) {
                         delete game.players[message.author.username];
                         delete game.alive[message.author.username];
@@ -314,8 +314,8 @@ client.on("message", async message => {
                     if (listed) return message.reply("There is no game for you to leave.");
                     break;
                 case "players":
-                    if ((!gameNow && !playing) || game.alive.length < 1) message.reply("There are no players to show. Perhaps a game has not been started, or there are no players yet in the current game.");
-                    else if (gameNow || playing) {
+                    if ((!setup.gameNow && !playing) || game.alive.length < 1) message.reply("There are no players to show. Perhaps a game has not been started, or there are no players yet in the current game.");
+                    else if (setup.gameNow || playing) {
                         message.channel.send({
                             embed: {
                                 //color: 3447003,
@@ -342,9 +342,9 @@ client.on("message", async message => {
                     break;
                 case "start":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (gameNow || playing)) message.reply("There is already a game in progress.");
-                    if (role && !gameNow && !playing) {
-                        gameNow = true;
+                    if (role && (setup.gameNow || playing)) message.reply("There is already a game in progress.");
+                    if (role && !setup.gameNow && !playing) {
+                        setup.gameNow = true;
                         game.master = message.author.username;
                         message.author.send("You are the Gamemaster for the current game. After each night the action log will be DMed to you, and during the game you can view secret stats about the players.");
                         message.channel.send({
@@ -368,9 +368,9 @@ client.on("message", async message => {
                     break;
                 case "end":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
-                    if (role && !gameNow && playing) {
-                        gameNow = false;
+                    if (role && (setup.gameNow || !playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
+                    if (role && !setup.gameNow && playing) {
+                        setup.gameNow = false;
                         playing = false;
                         game = {
                             day: 0,
@@ -385,9 +385,9 @@ client.on("message", async message => {
                     break;
                 case "begin":
                     if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && !gameNow) message.reply("There is no current game to begin.");
-                    if (role && gameNow) {
-                        gameNow = false;
+                    if (role && !setup.gameNow) message.reply("There is no current game to begin.");
+                    if (role && setup.gameNow) {
+                        setup.gameNow = false;
                         playing = true;
                         message.channel.send({
                             embed: {
