@@ -100,16 +100,15 @@ var roles = {
     actions - The actions taken during the previous/current night; key: username, data: Object
     
     Imminent TODOs:
-    - Remove game.players and roll its data into the Player object
-    - Make game.master data an object
-    - Be sure that when actions are saved they're objects
+     - Remove game.players and roll its data (message.author.id) into the Player object
+     - Make game.master data an object-literal (e.g. {name: message.author.username, id: message.author.id})
+     - Be sure that when actions are saved they're objects (e.g. p3: {Name1: {"Role1", "Target1"}, Name2: {"Role2", "Target2"}})
 */
 var game = {
     day: 0,
     nightlyDead: [],
     alive: {},
     dead: {},
-    players: {},
     master: "",
     actions: {
         p5: {},
@@ -131,8 +130,9 @@ var setup = {
     }
 };
 
-var Player = function(username, role) {
-    this.username = username;
+var Player = function(name, role) {
+    this.username = name.username;
+    this.id = name.id;
     this.role = role;
     this.infoText = roles[this.role].txt;
     this.priority = roles[this.role].priority;
@@ -175,7 +175,7 @@ client.on("message", async message => {
                 if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                 if (game.alive[args[1]] !== null && ability[0] >= 1) {
                     game.actions[authorRole.priority][message.author.username] = action;
-                    return client.fetchUser(game.players[args[1]]).then(user => {
+                    return client.fetchUser(game.alive[args[1]].id).then(user => {
                         message.author.send(`_${args[1]} will be ${action}ed._`);
                         if (ability[1] !== undefined) user.send(ability[1]);
                     }).catch(error => message.author.send(`Failed to perform action: ${error}`));
@@ -299,9 +299,8 @@ client.on("message", async message => {
                 case "join":
                     if (!setup.gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
                     if (setup.gameNow && listed) {
-                        game.players[message.author.username] = message.author.id;
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
-                        game.alive[message.author.username] = new Player(message.author.username, "Jailor");
+                        game.alive[message.author.username] = new Player(message.author, "Jailor");
                         message.channel.send(`_${message.author} has joined the game._`);
                         
                         return message.author.send(`Your role is _${game.alive[message.author.username].role}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
@@ -313,7 +312,6 @@ client.on("message", async message => {
                 case "leave":
                     if (setup.gameNow && listed) return message.reply("You may not leave until the game has begun.");
                     if (setup.playing && listed) {
-                        delete game.players[message.author.username];
                         delete game.alive[message.author.username];
                         message.member.removeRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         
