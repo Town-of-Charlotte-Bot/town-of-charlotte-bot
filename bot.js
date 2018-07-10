@@ -181,14 +181,15 @@ client.on("message", async message => {
             }
             if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
             let gameAction = function(action) {
-                const ability = roles[game.alive[message.author.username]].abilities[action];
+                const authorRole = roles[game.alive[message.author.username].role];
+                const ability = authorRole.abilities[action];
 
                 if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                 if (args[1] === null) return message.author.send("You must provide the username of your target.");
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                 if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                 if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                    game.actions[roles[game.alive[message.author.username]].priority][message.author.username] = action;
+                    game.actions[authorRole.priority][message.author.username] = action;
                     return client.fetchUser(game.players[args[1]]).then(user => {
                         message.author.send(`_${args[1]} will be ${action}ed._`);
                         if (ability[1] !== undefined) user.send(ability[1]);
