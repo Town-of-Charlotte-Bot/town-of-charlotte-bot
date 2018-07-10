@@ -165,22 +165,7 @@ client.on("message", async message => {
     
     if (command === "action") {
         if (listed) {
-            /*
-                Role Actions:
-
-                lock - role-blocks target, protects from harm
-                block - role-blocks target
-                kill - kills target
-                investigate - gives two options for target's role
-                heal - heals target
-            */
-            const roleActions = ["lock", "block", "kill", "investigate", "heal"];
-            /*var i = 0;
-            while (i < roleActions.length) {
-                if (args[0] === roleActions[i]) return game.alive[message.author.username].takeAction(args[0], args[1]);
-            }
-            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
-            let gameAction = function(action) {
+            var gameAction = function(action) {
                 const authorRole = roles[game.alive[message.author.username].role];
                 const ability = authorRole.abilities[action];
 
@@ -197,9 +182,25 @@ client.on("message", async message => {
                 }
             };
             
-            if (args[0] === "lock") return gameAction(args[0]);
+            /*
+                Role Actions:
+
+                lock - role-blocks target, protects from harm
+                block - role-blocks target
+                kill - kills target
+                investigate - gives two options for target's role
+                heal - heals target
+            */
+            const roleActions = ["lock", "block", "kill", "investigate", "heal"];
+            var i = 0;
+            while (i < roleActions.length) {
+                if (args[0] === roleActions[i]) return gameAction(args[0]);
+            }
+            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+            
+            /*if (args[0] === "lock") return gameAction(args[0]);
             if (args[0] === "kill") return gameAction(args[0]);
-            else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+            else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
         } else {
             return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
         }
