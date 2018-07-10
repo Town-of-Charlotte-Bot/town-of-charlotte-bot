@@ -129,9 +129,9 @@ var setup = {
 var Player = function(username, role) {
     this.username = username;
     this.role = role;
-    this.infoText = roles[this.role].txt;
-    this.priority = roles[this.role].priority;
-    this.getAbilities = roles[this.role].abilities;
+    this.infoText = roles[this.username.role].txt;
+    this.priority = roles[this.username.role].priority;
+    this.getAbilities = roles[this.username.role].abilities;
     this.hasImmunity = function(type) {
         return roles[this.role].immunity[type];
     };
