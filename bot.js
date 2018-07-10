@@ -144,6 +144,7 @@ Player.prototype.takeAction = function(sender, action, target) {
     if (this.getAbilities === undefined || this.getAbilities[0] < 1) return sender.send(`You do not have the ability to ${action} anyone.`);
     if (game.alive[target] === null) return sender.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
     if (game.alive[target] !== null && this.getAbilities[0] >= 1) {
+        console.log("Succeeded");
         game.actions[this.priority][this.username] = action;
         client.fetchUser(game.players[target]).then(user => {
             if (this.getAbilities[1] !== undefined) user.send(this.getAbilities[1]);
@@ -153,7 +154,7 @@ Player.prototype.takeAction = function(sender, action, target) {
 };
 
 client.on("ready", () => {
-    client.user.setGame("Town of Charlotte");
+    client.user.game.name("Town of Charlotte");
     console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
 });
 
