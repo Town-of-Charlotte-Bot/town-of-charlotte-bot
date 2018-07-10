@@ -154,7 +154,7 @@ Player.prototype.takeAction = function(sender, action, target) {
 };
 
 client.on("ready", () => {
-    client.user.game.name("Town of Charlotte");
+    client.user.setGame("Town of Charlotte");
     console.log(`Ready for action! Serving ${client.users.size} users in ${client.channels.size} channels of ${client.guilds.size} servers.`);
 });
 
