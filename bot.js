@@ -194,9 +194,15 @@ client.on("message", async message => {
             const roleActions = ["lock", "block", "kill", "investigate", "heal"];
             var i = 0;
             while (i < roleActions.length) {
-                if (args[0] === roleActions[i]) return gameAction(args[0]);
+                if (args[0] === roleActions[i]) {
+                    i = 0;
+                    return gameAction(args[0]);
+                }
             }
-            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+            if (i === roleActions.length) {
+                i = 0;
+                return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+            }
             
             /*if (args[0] === "lock") return gameAction(args[0]);
             if (args[0] === "kill") return gameAction(args[0]);
