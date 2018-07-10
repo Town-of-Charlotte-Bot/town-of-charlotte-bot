@@ -11,3 +11,4 @@
  - Prevent multiple people from being lynched in the same day, and only lynching after the first day
  - Psychopath wins with whichever team wins (not immediately after their target is lynched)
  - In the case of a targeting stalemate (like SK and GF targeting each other) neither player dies
+ - Move all unique identifying over to player ids instead of usernames
