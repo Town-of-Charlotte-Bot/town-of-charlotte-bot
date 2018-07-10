@@ -93,11 +93,16 @@ var roles = {
     
     day - The in-game day
     nightlyDead - The players who died in the previous night; key: username, data: role
-    alive - The players who are alive; key: username, data: role
-    dead - The players who have died; key: username, data: role
+    alive - The players who are alive; key: username, data: Object
+    dead - The players who have died; key: username, data: Object
     players - The list of players; key: username, data: id
     master - The Gamemaster
-    actions - The actions taken during the previous/current night; key: 
+    actions - The actions taken during the previous/current night; key: username, data: Object
+    
+    Imminent TODOs:
+    - Remove game.players and roll its data into the Player object
+    - Make game.master data an object
+    - Be sure that when actions are saved they're objects
 */
 var game = {
     day: 0,
@@ -138,29 +143,6 @@ var Player = function(username, role) {
     this.isAlive = (Object.keys(game.alive).indexOf(this.username) === -1) ? false : true;
     this.isDead = (Object.keys(game.dead).indexOf(this.username) === -1) ? false : true;
 };
-Player.prototype.takeAction = function(sender, action, target) {
-    /*if (Object.keys(game.alive).indexOf(this.username) === -1) return sender.send("You are not playing in the current game.");
-    if (target === null) return sender.send("You must provide the username of your target.");
-    if (this.getAbilities === undefined || this.getAbilities[0] < 1) return sender.send(`You do not have the ability to ${action} anyone.`);
-    if (game.alive[target] === null) return sender.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);*/
-    /*if (game.alive[target] !== null && roles[this.role].abilities[0] >= 1) {
-        console.log("Succeeded");
-        game.actions[this.priority][this.username] = action;
-        client.fetchUser(game.players[target]).then(user => {
-            if (this.getAbilities[1] !== undefined) user.send(this.getAbilities[1]);
-            return sender.send(`_${target} will be ${action}ed._`);
-        }).catch(error => sender.send(`Failed to perform action: ${error}`));
-    }*/
-    console.log("First");
-    if (game.alive[target] !== null) { //&& roles[game.alive[sender.username].role].abilities[0] >= 1) {
-        console.log("Succeeded");
-        game.actions[roles[game.alive[sender.username].role].priority][sender.username] = action;
-        client.fetchUser(game.players[target]).then(user => {
-            if (roles[game.alive[sender.username].role].abilities[1] !== undefined) user.send(roles[game.alive[sender.username].role].abilities[1]);
-            return sender.send(`_${target} will be ${action}ed._`);
-        }).catch(error => sender.send(`Failed to perform action: ${error}`));
-    }
-};
 
 client.on("ready", () => {
     client.user.setGame("Town of Charlotte");
@@ -198,7 +180,24 @@ client.on("message", async message => {
                 if (args[0] === roleActions[i]) return game.alive[message.author.username].takeAction(args[0], args[1]);
             }
             if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
-            if (args[0] === "lock") return game.alive[message.author.username].takeAction(message.author, args[0], args[1]);
+            let gameAction = function(action) {
+                const ability = roles[game.alive[message.author.username]].abilities[action];
+
+                if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
+                if (args[1] === null) return message.author.send("You must provide the username of your target.");
+                if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
+                if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+                if (game.alive[args[1]] !== null && ability[0] >= 1) {
+                    game.actions[roles[game.alive[message.author.username]].priority][message.author.username] = action;
+                    return client.fetchUser(game.players[args[1]]).then(user => {
+                        message.author.send(`_${args[1]} will be ${action}ed._`);
+                        if (ability[1] !== undefined) user.send(ability[1]);
+                    }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+                }
+            };
+            
+            if (args[0] === "lock") return gameAction(args[0]);
+            if (args[0] === "kill") return gameAction(args[0]);
             else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
         } else {
             return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
@@ -348,7 +347,7 @@ client.on("message", async message => {
                     if (role && !setup.gameNow && !setup.playing) {
                         setup.gameNow = true;
                         game.master = message.author.username;
-                        message.author.send("You are the Gamemaster for the current game. After each night the action log will be DMed to you, and during the game you can view secret stats about the players.");
+                        message.author.send("You are the Gamemaster.\nAfter each night the action log will be DMed to you, and during the game you can view secret stats about the players.");
                         message.channel.send({
                             embed: {
                                 //color: 3447003,
