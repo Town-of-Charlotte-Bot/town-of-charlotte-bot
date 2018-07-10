@@ -143,11 +143,20 @@ Player.prototype.takeAction = function(sender, action, target) {
     if (target === null) return sender.send("You must provide the username of your target.");
     if (this.getAbilities === undefined || this.getAbilities[0] < 1) return sender.send(`You do not have the ability to ${action} anyone.`);
     if (game.alive[target] === null) return sender.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);*/
-    if (game.alive[target] !== null && roles[this.role].abilities[0] >= 1) {
+    /*if (game.alive[target] !== null && roles[this.role].abilities[0] >= 1) {
         console.log("Succeeded");
         game.actions[this.priority][this.username] = action;
         client.fetchUser(game.players[target]).then(user => {
             if (this.getAbilities[1] !== undefined) user.send(this.getAbilities[1]);
+            return sender.send(`_${target} will be ${action}ed._`);
+        }).catch(error => sender.send(`Failed to perform action: ${error}`));
+    }*/
+    console.log("First");
+    if (game.alive[target] !== null && roles[game.alive[sender.username].role].abilities[0] >= 1) {
+        console.log("Succeeded");
+        game.actions[roles[game.alive[sender.username].role].priority][sender.username] = action;
+        client.fetchUser(game.players[target]).then(user => {
+            if (roles[game.alive[sender.username].role].abilities[1] !== undefined) user.send(roles[game.alive[sender.username].role].abilities[1]);
             return sender.send(`_${target} will be ${action}ed._`);
         }).catch(error => sender.send(`Failed to perform action: ${error}`));
     }
