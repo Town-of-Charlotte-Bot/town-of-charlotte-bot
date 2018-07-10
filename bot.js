@@ -129,9 +129,9 @@ var setup = {
 var Player = function(username, role) {
     this.username = username;
     this.role = role;
-    this.infoText = roles[this.username.role].txt;
-    this.priority = roles[this.username.role].priority;
-    this.getAbilities = roles[this.username.role].abilities;
+    this.infoText = roles[this.role].txt;
+    this.priority = roles[this.role].priority;
+    this.getAbilities = roles[this.role].abilities;
     this.hasImmunity = function(type) {
         return roles[this.role].immunity[type];
     };
@@ -143,7 +143,7 @@ Player.prototype.takeAction = function(sender, action, target) {
     if (target === null) return sender.send("You must provide the username of your target.");
     if (this.getAbilities === undefined || this.getAbilities[0] < 1) return sender.send(`You do not have the ability to ${action} anyone.`);
     if (game.alive[target] === null) return sender.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
-    if (game.alive[target] !== null && this.getAbilities[0] >= 1) {
+    if (game.alive[target] !== null && roles[this.role].abilities[0] >= 1) {
         console.log("Succeeded");
         game.actions[this.priority][this.username] = action;
         client.fetchUser(game.players[target]).then(user => {
