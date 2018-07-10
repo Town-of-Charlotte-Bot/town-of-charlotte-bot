@@ -139,10 +139,10 @@ var Player = function(username, role) {
     this.isDead = (Object.keys(game.dead).indexOf(this.username) === -1) ? false : true;
 };
 Player.prototype.takeAction = function(sender, action, target) {
-    if (Object.keys(game.alive).indexOf(this.username) === -1) return sender.send("You are not playing in the current game.");
+    /*if (Object.keys(game.alive).indexOf(this.username) === -1) return sender.send("You are not playing in the current game.");
     if (target === null) return sender.send("You must provide the username of your target.");
     if (this.getAbilities === undefined || this.getAbilities[0] < 1) return sender.send(`You do not have the ability to ${action} anyone.`);
-    if (game.alive[target] === null) return sender.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+    if (game.alive[target] === null) return sender.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);*/
     if (game.alive[target] !== null && roles[this.role].abilities[0] >= 1) {
         console.log("Succeeded");
         game.actions[this.priority][this.username] = action;
