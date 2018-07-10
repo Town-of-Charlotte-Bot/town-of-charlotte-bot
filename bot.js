@@ -29,7 +29,7 @@ var roles = {
         priority: "p4",
         abilities: {
             lock: [Infinity, "You were locked up by the Jailor!"],
-            kill: [1, "You were executed by the Jailor!"]
+            kill: [1, "You were attacked!"]
         },
         immunity: {
             night: false,
@@ -50,10 +50,10 @@ var roles = {
         }
     },
     Godfather: {
-        txt: "Selects target for mafia to kill, if no mafioso you will perform it.",
+        txt: "Select a target for mafia to kill, if no mafioso you will perform it.",
         priority: "p3",
         abilities: {
-            kill: [Infinity, "You were killed by the Mafia!"]
+            kill: [Infinity, "You were attacked!"]
         },
         immunity: {
             night: true,
@@ -62,7 +62,7 @@ var roles = {
         }
     },
     Mafioso: {
-        txt: "Carry out the Godfather's order and kill his target. Becomes Godfather if he dies.",
+        txt: "Carry out the Godfather's order and kill his target. You become Godfather if he dies.",
         priority: "p3",
         abilities: {
 
@@ -98,18 +98,13 @@ var roles = {
     players - The list of players; key: username, data: id
     master - The Gamemaster
     actions - The actions taken during the previous/current night; key: username, data: Object
-    
-    Imminent TODOs:
-     - Remove game.players and roll its data (message.author.id) into the Player object
-     - Make game.master data an object-literal (e.g. {name: message.author.username, id: message.author.id})
-     - Be sure that when actions are saved they're objects (e.g. p3: {Name1: {"Role1", "Target1"}, Name2: {"Role2", "Target2"}})
 */
 var game = {
     day: 0,
     nightlyDead: [],
     alive: {},
     dead: {},
-    master: "",
+    master: {},
     actions: {
         p5: {},
         p4: {},
@@ -117,7 +112,7 @@ var game = {
         p2: {},
         p1: {},
         p0: {},
-        p_1: {}
+        p_1: {Test:{empty:"Nothing to see here..."}}
     }
 };
 
@@ -165,7 +160,7 @@ client.on("message", async message => {
     
     if (command === "action") {
         if (listed) {
-            var gameAction = function(action) {
+            var gameAction = function(action, target) {
                 const authorRole = roles[game.alive[message.author.username].role];
                 const ability = authorRole.abilities[action];
 
@@ -174,7 +169,8 @@ client.on("message", async message => {
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                 if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                 if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                    game.actions[authorRole.priority][message.author.username] = action;
+                    game.actions[authorRole.priority][message.author.username].action = action;
+                    game.actions[authorRole.priority][message.author.username].target = target;
                     return client.fetchUser(game.alive[args[1]].id).then(user => {
                         message.author.send(`_${args[1]} will be ${action}ed._`);
                         if (ability[1] !== undefined) user.send(ability[1]);
@@ -195,7 +191,7 @@ client.on("message", async message => {
             var i = 0;
             while (i < roleActions.length) {
                 if (args[0] === roleActions[i]) {
-                    return gameAction(args[0]);
+                    return gameAction(args[0], args[1]);
                 }
                 i++;
             }
@@ -351,7 +347,8 @@ client.on("message", async message => {
                     if (role && (setup.gameNow || setup.playing)) message.reply("There is already a game in progress.");
                     if (role && !setup.gameNow && !setup.playing) {
                         setup.gameNow = true;
-                        game.master = message.author.username;
+                        game.master.name = message.author.username;
+                        game.master.id = message.author.id;
                         message.author.send("You are the Gamemaster.\nAfter each night the action log will be DMed to you, and during the game you can view secret stats about the players.");
                         message.channel.send({
                             embed: {
