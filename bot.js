@@ -152,7 +152,7 @@ Player.prototype.takeAction = function(sender, action, target) {
         }).catch(error => sender.send(`Failed to perform action: ${error}`));
     }*/
     console.log("First");
-    if (game.alive[target] !== null && roles[game.alive[sender.username].role].abilities[0] >= 1) {
+    if (game.alive[target] !== null) { //&& roles[game.alive[sender.username].role].abilities[0] >= 1) {
         console.log("Succeeded");
         game.actions[roles[game.alive[sender.username].role].priority][sender.username] = action;
         client.fetchUser(game.players[target]).then(user => {
