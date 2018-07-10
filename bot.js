@@ -195,12 +195,11 @@ client.on("message", async message => {
             var i = 0;
             while (i < roleActions.length) {
                 if (args[0] === roleActions[i]) {
-                    i = 0;
                     return gameAction(args[0]);
                 }
+                i++;
             }
             if (i === roleActions.length) {
-                i = 0;
                 return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
             }
             
