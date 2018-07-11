@@ -27,7 +27,7 @@ var roles = {
     },
     Jailor: {
         txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
-        priority: "p4",
+        priority: "p6",
         abilities: {
             lock: [Infinity, "You were locked up by the Jailor!"],
             kill: [1, "You were attacked!"]
@@ -496,7 +496,7 @@ client.on("message", async message => {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
             var content = eval(message.content.substr(7));
-            if (message.channel.send(content) == "") content = "\n";
+            if (content == "") content = "[ Empty Message ]";
             message.channel.send(content);
         }
     }
