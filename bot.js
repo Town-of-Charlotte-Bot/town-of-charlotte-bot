@@ -169,16 +169,15 @@ client.on("message", async message => {
             var gameAction = function(action, target) {
                 const authorRole = roles[game.alive[message.author.username].role];
                 const ability = authorRole.abilities[action];
-                var actionPriority = game.actions[authorRole.priority][message.author.username];
 
                 if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                 if (args[1] === null) return message.author.send("You must provide the username of your target.");
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                 if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                 if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                    actionPriority = [];
-                    actionPriority.push(action);
-                    actionPriority.push(target);
+                    game.actions[authorRole.priority][message.author.username] = {};
+                    game.actions[authorRole.priority][message.author.username].action = action;
+                    game.actions[authorRole.priority][message.author.username].target = target;
                     return client.fetchUser(game.alive[args[1]].id).then(user => {
                         message.author.send(`_${args[1]} will be ${action}ed._`);
                         if (ability[1] !== undefined) user.send(ability[1]);
@@ -496,7 +495,7 @@ client.on("message", async message => {
         if (!role) message.reply("You are not authorized to perform this action.");
         if (role) {
             var content = eval(message.content.substr(7));
-            if (content == "") content = "[ Empty Message ]";
+            if (content == "") content = "_[ Empty Message ]_";
             message.channel.send(content);
         }
     }
