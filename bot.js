@@ -176,9 +176,9 @@ client.on("message", async message => {
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                 if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                 if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                    actionPriority = {};
-                    actionPriority.action = action;
-                    actionPriority.target = target;
+                    actionPriority = [];
+                    actionPriority.push(action);
+                    actionPriority.push(target);
                     return client.fetchUser(game.alive[args[1]].id).then(user => {
                         message.author.send(`_${args[1]} will be ${action}ed._`);
                         if (ability[1] !== undefined) user.send(ability[1]);
