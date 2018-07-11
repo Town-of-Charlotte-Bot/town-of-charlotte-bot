@@ -169,7 +169,7 @@ client.on("message", async message => {
             var gameAction = function(action, target) {
                 const authorRole = roles[game.alive[message.author.username].role];
                 const ability = authorRole.abilities[action];
-                const actionPriority = game.actions[authorRole.priority][message.author.username];
+                var actionPriority = game.actions[authorRole.priority][message.author.username];
 
                 if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                 if (args[1] === null) return message.author.send("You must provide the username of your target.");
