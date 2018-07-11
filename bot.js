@@ -21,7 +21,8 @@ var roles = {
         immunity: {
             night: false,
             bite: false,
-            detect: false
+            detect: false,
+            roleBlock: false
         }
     },
     Jailor: {
@@ -34,7 +35,8 @@ var roles = {
         immunity: {
             night: false,
             bite: false,
-            detect: false
+            detect: false,
+            roleBlock: false
         }
     },
     Doctor: {
@@ -46,7 +48,8 @@ var roles = {
         immunity: {
             night: false,
             bite: false,
-            detect: false
+            detect: false,
+            roleBlock: false
         }
     },
     Godfather: {
@@ -58,7 +61,8 @@ var roles = {
         immunity: {
             night: true,
             bite: true,
-            detect: true
+            detect: true,
+            roleBlock: true
         }
     },
     Mafioso: {
@@ -70,7 +74,8 @@ var roles = {
         immunity: {
             night: false,
             bite: false,
-            detect: false
+            detect: false,
+            roleBlock: false
         }
     },
     "Serial Killer": {
@@ -82,7 +87,8 @@ var roles = {
         immunity: {
             night: true,
             bite: true,
-            detect: false
+            detect: false,
+            roleBlock: false
         },
         wins: "solo"
     }
@@ -106,13 +112,14 @@ var game = {
     dead: {},
     master: {},
     actions: {
+        p6: {},
         p5: {},
         p4: {},
         p3: {},
         p2: {},
         p1: {},
         p0: {},
-        p_1: {Test:{empty:"Nothing to see here..."}}
+        p_1: {}
     }
 };
 
@@ -130,7 +137,6 @@ var Player = function(name, role) {
     this.id = name.id;
     this.role = role;
     this.infoText = roles[this.role].txt;
-    this.priority = roles[this.role].priority;
     this.getAbilities = roles[this.role].abilities;
     this.hasImmunity = function(type) {
         return roles[this.role].immunity[type];
@@ -163,14 +169,16 @@ client.on("message", async message => {
             var gameAction = function(action, target) {
                 const authorRole = roles[game.alive[message.author.username].role];
                 const ability = authorRole.abilities[action];
+                const actionPriority = game.actions[authorRole.priority][message.author.username];
 
                 if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
                 if (args[1] === null) return message.author.send("You must provide the username of your target.");
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                 if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                 if (game.alive[args[1]] !== null && ability[0] >= 1) {
-                    game.actions[authorRole.priority][message.author.username].action = action;
-                    game.actions[authorRole.priority][message.author.username].target = target;
+                    actionPriority = {};
+                    actionPriority.action = action;
+                    actionPriority.target = target;
                     return client.fetchUser(game.alive[args[1]].id).then(user => {
                         message.author.send(`_${args[1]} will be ${action}ed._`);
                         if (ability[1] !== undefined) user.send(ability[1]);
@@ -190,21 +198,11 @@ client.on("message", async message => {
             const roleActions = ["lock", "block", "kill", "investigate", "heal"];
             var i = 0;
             while (i < roleActions.length) {
-                if (args[0] === roleActions[i]) {
-                    return gameAction(args[0], args[1]);
-                }
+                if (args[0] === roleActions[i]) return gameAction(args[0], args[1]);
                 i++;
             }
-            if (i === roleActions.length) {
-                return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
-            }
-            
-            /*if (args[0] === "lock") return gameAction(args[0]);
-            if (args[0] === "kill") return gameAction(args[0]);
-            else return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");*/
-        } else {
-            return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
-        }
+            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+        } else return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
     }
     
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
