@@ -178,6 +178,7 @@ client.on("message", async message => {
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
+    const listed = (game.alive[message.author.username] === null) ? false : true;
     
     if (command === "action") {
         var ifUserWithRole = function(role) {
