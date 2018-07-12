@@ -188,13 +188,12 @@ client.on("message", async message => {
         };
 
         var gameAction = function(action, target) {
-            const authorRoleData = roles[game.alive[message.author.username]];
             const authorRole = roles[game.alive[message.author.username].role];
             const ability = authorRole.abilities[action];
 
             if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
             if (action === "sleep") {
-                if (authorRoleData.canSleep) {
+                if (authorRole.canSleep) {
                     game.actions[authorRole.priority][message.author.username] = {
                         action: "sleep",
                         target: undefined
@@ -206,9 +205,9 @@ client.on("message", async message => {
             if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
             if (game.alive[args[1]] === undefined) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
             if (message.author.username === target) {
-                if (authorRoleData.canTargetSelf > 0) {
+                if (authorRole.canTargetSelf > 0) {
                     ability[0]--;
-                    authorRoleData.canTargetSelf--;
+                    authorRole.canTargetSelf--;
                     game.actions[authorRole.priority][message.author.username] = {
                         action: action,
                         target: target
