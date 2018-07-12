@@ -175,7 +175,7 @@ client.on("message", async message => {
                 return (string.indexOf(role) === -1) ? false : true;
             };
             var getUserWithRole = function(role) {
-                for (var i in game.alive) {
+                for (var i = 0; i < Object.keys(game.alive); i++) {
                     if (Object.keys(game.alive)[i].role === role) return Object.keys(game.alive)[i];
                 }
                 return false;
