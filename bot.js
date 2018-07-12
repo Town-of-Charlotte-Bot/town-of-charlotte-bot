@@ -177,13 +177,13 @@ client.on("message", async message => {
                 const ability = authorRole.abilities[action];
 
                 if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
-                if (args[1] === null) return message.author.send("You must provide the username of your target.");
+                if (args[1] === undefined) return message.author.send("You must provide the username of your target.");
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
-                if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+                if (game.alive[args[1]] === undefined) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
                 if (message.author.username === target) return message.author.send(`You can't ${action} yourself.`);
-                if (game.alive[args[1]] !== null && ability[0] >= 1) {
+                if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
                     ability[0]--;
-                    if (getUserByRole("Jailor")) message.author.send(`User with Jailor is ${getUserByRole("Jailor").username}.`);
+                    if (getUserByRole("Jailor").username === "KonurPapa") message.author.send(`User with Jailor is ${getUserByRole("Jailor").username}.`);
                     game.actions[authorRole.priority][message.author.username] = {
                         action: action,
                         target: target
