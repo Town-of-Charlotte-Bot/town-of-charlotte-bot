@@ -172,6 +172,7 @@ client.on("message", async message => {
                 }
                 return false;*/
                 var string = JSON.stringify(game.alive);
+                console.log(string);
                 return (string.indexOf(role) === -1) ? false : true;
             };
             var getUserWithRole = function(role) {
@@ -193,7 +194,7 @@ client.on("message", async message => {
                 if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
                     ability[0]--;
                     if (ifUserWithRole("Jailor")) console.log("There's a Jailor!");
-                    if (getUserWithRole("Jailor") !== false) console.log("And I know who the Jailor is! It's " + getUserWithRole("Jailor").username);
+                    //if (getUserWithRole("Jailor") !== false) console.log("And I know who the Jailor is! It's " + getUserWithRole("Jailor").username);
                     game.actions[authorRole.priority][message.author.username] = {
                         action: action,
                         target: target
