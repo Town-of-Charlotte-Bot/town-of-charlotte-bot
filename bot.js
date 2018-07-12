@@ -26,7 +26,7 @@ var roles = {
         },
         wins: "town",
         canTargetSelf: 0,
-        canSleep: true;
+        canSleep: true
     },
     Jailor: {
         txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
