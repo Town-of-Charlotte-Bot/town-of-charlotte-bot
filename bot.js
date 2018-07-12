@@ -23,7 +23,9 @@ var roles = {
             bite: false,
             detect: false,
             roleBlock: false
-        }
+        },
+        wins: "town",
+        canTargetSelf: 0
     },
     Jailor: {
         txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
@@ -37,7 +39,9 @@ var roles = {
             bite: false,
             detect: false,
             roleBlock: false
-        }
+        },
+        wins: "town",
+        canTargetSelf: 0
     },
     Doctor: {
         txt: "Heal 1 person each night, preventing them from dying.",
@@ -50,7 +54,9 @@ var roles = {
             bite: false,
             detect: false,
             roleBlock: false
-        }
+        },
+        wins: "town",
+        canTargetSelf: 1
     },
     Godfather: {
         txt: "Select a target for mafia to kill, if no mafioso you will perform it.",
@@ -63,7 +69,9 @@ var roles = {
             bite: true,
             detect: true,
             roleBlock: true
-        }
+        },
+        wins: "solo",
+        canTargetSelf: 0
     },
     Mafioso: {
         txt: "Carry out the Godfather's order and kill his target. You become Godfather if he dies.",
@@ -76,7 +84,9 @@ var roles = {
             bite: false,
             detect: false,
             roleBlock: false
-        }
+        },
+        wins: "mafia",
+        canTargetSelf: 0
     },
     "Serial Killer": {
         txt: "Kills someone each night.",
@@ -90,7 +100,8 @@ var roles = {
             detect: false,
             roleBlock: false
         },
-        wins: "solo"
+        wins: "solo",
+        canTargetSelf: 0
     }
 };
 
@@ -129,7 +140,8 @@ var setup = {
     playing: false,
     addPlayer: function(name, role) {
         return game.alive[name] = new Player(name, role);
-    }
+    },
+    players: []
 };
 
 var Player = function(name, role) {
@@ -167,22 +179,18 @@ client.on("message", async message => {
     if (command === "action") {
         if (listed) {
             var ifUserWithRole = function(role) {
-                /*for (var i = 0; i < Object.keys(game.alive).length; i++) {
-                    if (Object.keys(game.alive)[i].role === role) return Object.keys(game.alive)[i];
-                }
-                return false;*/
                 var string = JSON.stringify(game.alive);
                 console.log(string);
                 return (string.indexOf(role) === -1) ? false : true;
             };
             var getUserWithRole = function(role) {
                 for (var i = 0; i < Object.keys(game.alive); i++) {
-                    if (Object.keys(game.alive)[i].role === role) return Object.keys(game.alive)[i];
+                    return (Object.keys(game.alive)[i].role === role) ? Object.keys(game.alive)[i] : false;
                 }
-                return false;
             };
             
             var gameAction = function(action, target) {
+                const authorRoleData = roles[game.alive[message.author.username]];
                 const authorRole = roles[game.alive[message.author.username].role];
                 const ability = authorRole.abilities[action];
 
@@ -190,11 +198,19 @@ client.on("message", async message => {
                 if (args[1] === undefined) return message.author.send("You must provide the username of your target.");
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                 if (game.alive[args[1]] === undefined) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
-                if (message.author.username === target) return message.author.send(`You can't ${action} yourself.`);
+                if (message.author.username === target) {
+                    if (authorRoleData.canTargetSelf > 0) {
+                        ability[0]--;
+                        authorRoleData.canTargetSelf--;
+                        game.actions[authorRole.priority][message.author.username] = {
+                            action: action,
+                            target: target
+                        };
+                        return message.author.send(`_You ${action}ed yourself._`);
+                    } else return message.author.send(`You can't ${action} yourself.`);
+                }
                 if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
                     ability[0]--;
-                    if (ifUserWithRole("Jailor")) console.log("There's a Jailor!");
-                    //if (getUserWithRole("Jailor") !== false) console.log("And I know who the Jailor is! It's " + getUserWithRole("Jailor").username);
                     game.actions[authorRole.priority][message.author.username] = {
                         action: action,
                         target: target
