@@ -25,7 +25,8 @@ var roles = {
             roleBlock: false
         },
         wins: "town",
-        canTargetSelf: 0
+        canTargetSelf: 0,
+        canSleep: true;
     },
     Jailor: {
         txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
@@ -41,13 +42,14 @@ var roles = {
             roleBlock: false
         },
         wins: "town",
-        canTargetSelf: 0
+        canTargetSelf: 0,
+        canSleep: true
     },
     Doctor: {
         txt: "Heal 1 person each night, preventing them from dying.",
         priority: "p2",
         abilities: {
-            heal: [Infinity]
+            heal: [Infinity, "You were healed by the doctor!"]
         },
         immunity: {
             night: false,
@@ -56,7 +58,8 @@ var roles = {
             roleBlock: false
         },
         wins: "town",
-        canTargetSelf: 1
+        canTargetSelf: 1,
+        canSleep: true
     },
     Godfather: {
         txt: "Select a target for mafia to kill, if no mafioso you will perform it.",
@@ -71,14 +74,13 @@ var roles = {
             roleBlock: true
         },
         wins: "solo",
-        canTargetSelf: 0
+        canTargetSelf: 0,
+        canSleep: true
     },
     Mafioso: {
         txt: "Carry out the Godfather's order and kill his target. You become Godfather if he dies.",
         priority: "p3",
-        abilities: {
-
-        },
+        abilities: {},
         immunity: {
             night: false,
             bite: false,
@@ -86,7 +88,8 @@ var roles = {
             roleBlock: false
         },
         wins: "mafia",
-        canTargetSelf: 0
+        canTargetSelf: 0,
+        canSleep: false
     },
     "Serial Killer": {
         txt: "Kills someone each night.",
@@ -101,7 +104,8 @@ var roles = {
             roleBlock: false
         },
         wins: "solo",
-        canTargetSelf: 0
+        canTargetSelf: 0,
+        canSleep: false
     }
 };
 
@@ -174,71 +178,72 @@ client.on("message", async message => {
     
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
-    const listed = (game.alive[message.author.username] === null) ? false : true;
     
     if (command === "action") {
-        if (listed) {
-            var ifUserWithRole = function(role) {
-                var string = JSON.stringify(game.alive);
-                console.log(string);
-                return (string.indexOf(role) === -1) ? false : true;
-            };
-            var getUserWithRole = function(role) {
-                for (var i = 0; i < Object.keys(game.alive); i++) {
-                    return (Object.keys(game.alive)[i].role === role) ? Object.keys(game.alive)[i] : false;
-                }
-            };
-            
-            var gameAction = function(action, target) {
-                const authorRoleData = roles[game.alive[message.author.username]];
-                const authorRole = roles[game.alive[message.author.username].role];
-                const ability = authorRole.abilities[action];
+        var ifUserWithRole = function(role) {
+            var string = JSON.stringify(game.alive);
+            console.log(string);
+            return (string.indexOf(role) === -1) ? false : true;
+        };
 
-                if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
-                if (args[1] === undefined) return message.author.send("You must provide the username of your target.");
-                if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
-                if (game.alive[args[1]] === undefined) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
-                if (message.author.username === target) {
-                    if (authorRoleData.canTargetSelf > 0) {
-                        ability[0]--;
-                        authorRoleData.canTargetSelf--;
-                        game.actions[authorRole.priority][message.author.username] = {
-                            action: action,
-                            target: target
-                        };
-                        return message.author.send(`_You ${action}ed yourself._`);
-                    } else return message.author.send(`You can't ${action} yourself.`);
-                }
-                if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
+        var gameAction = function(action, target) {
+            const authorRoleData = roles[game.alive[message.author.username]];
+            const authorRole = roles[game.alive[message.author.username].role];
+            const ability = authorRole.abilities[action];
+
+            if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
+            if (action === "sleep") {
+                if (authorRoleData.canSleep) {
+                    game.actions[authorRole.priority][message.author.username] = {
+                        action: "sleep",
+                        target: undefined
+                    };
+                    return message.author.send("You have gone to sleep.");
+                } else return message.author.send("You do not have the ability to sleep.");
+            }
+            if (args[1] === undefined) return message.author.send("You must provide the username of your target.");
+            if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
+            if (game.alive[args[1]] === undefined) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+            if (message.author.username === target) {
+                if (authorRoleData.canTargetSelf > 0) {
                     ability[0]--;
+                    authorRoleData.canTargetSelf--;
                     game.actions[authorRole.priority][message.author.username] = {
                         action: action,
                         target: target
                     };
-                    return client.fetchUser(game.alive[args[1]].id).then(user => {
-                        message.author.send(`_${args[1]} will be ${action}ed._`);
-                        if (ability[1] !== undefined) user.send(ability[1]);
-                    }).catch(error => message.author.send(`Failed to perform action: ${error}`));
-                }
-            };
-            
-            /*
-                Role Actions:
-
-                lock - role-blocks target, protects from harm
-                block - role-blocks target
-                kill - kills target
-                investigate - gives two options for target's role
-                heal - heals target
-            */
-            const roleActions = ["lock", "block", "kill", "investigate", "heal"];
-            var i = 0;
-            while (i < roleActions.length) {
-                if (args[0] === roleActions[i]) return gameAction(args[0], args[1]);
-                i++;
+                    return message.author.send(`_You ${action}ed yourself._`);
+                } else return message.author.send(`You can't ${action} yourself.`);
             }
-            if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
-        } else return message.author.send("You are not allowed to use this command. Perhaps you have been role-blocked, or you are not alive in the current game.");
+            if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
+                ability[0]--;
+                game.actions[authorRole.priority][message.author.username] = {
+                    action: action,
+                    target: target
+                };
+                return client.fetchUser(game.alive[args[1]].id).then(user => {
+                    message.author.send(`_${args[1]} will be ${action}ed._`);
+                    if (ability[1] !== undefined) user.send(ability[1]);
+                }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+            }
+        };
+
+        /*
+            Role Actions:
+
+            lock - role-blocks target, protects from harm
+            block - role-blocks target
+            kill - kills target
+            investigate - gives two options for target's role
+            heal - heals target
+        */
+        const roleActions = ["lock", "block", "kill", "investigate", "heal"];
+        var i = 0;
+        while (i < roleActions.length) {
+            if (args[0] === roleActions[i]) return gameAction(args[0], args[1]);
+            i++;
+        }
+        if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
     }
     
     const role = message.member.roles.some(r=>["Gamemaster"].includes(r.name));
@@ -275,6 +280,7 @@ client.on("message", async message => {
                             value: "`delete x` - Bulk-delete messages, where _x_ is the number of messages to delete\n"
                                 + "`game start` - Start a new game for players to join\n"
                                 + "`game begin` - Begin the game with the players that have joined\n"
+                                + "`game night` - End the current day and begin the night\n"
                                 + "`game end` - End the current game\n"
                                 + "`roles players` - DMs the user a list of all players in the current game and their respective roles"
                         },
