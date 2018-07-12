@@ -170,6 +170,7 @@ client.on("message", async message => {
                 for (var i = 0; i < Object.keys(game.alive).length; i++) {
                     if (Object.keys(game.alive)[i].role === role) return Object.keys(game.alive)[i];
                 }
+                return false;
             };
             
             var gameAction = function(action, target) {
@@ -183,7 +184,7 @@ client.on("message", async message => {
                 if (message.author.username === target) return message.author.send(`You can't ${action} yourself.`);
                 if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
                     ability[0]--;
-                    if (getUserByRole("Jailor").username === "KonurPapa") message.author.send(`User with Jailor is ${getUserByRole("Jailor").username}.`);
+                    if (getUserByRole("Jailor") !== false) console.log(`User with Jailor is ${getUserByRole("Jailor").username}.`);
                     game.actions[authorRole.priority][message.author.username] = {
                         action: action,
                         target: target
