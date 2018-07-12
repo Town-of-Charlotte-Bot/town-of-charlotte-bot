@@ -166,6 +166,12 @@ client.on("message", async message => {
     
     if (command === "action") {
         if (listed) {
+            var getUserByRole = function(role) {
+                for (var i = 0; i < Object.keys(game.alive).length; i++) {
+                    if (Object.keys(game.alive)[i].role === role) return Object.keys(game.alive)[i];
+                }
+            };
+            
             var gameAction = function(action, target) {
                 const authorRole = roles[game.alive[message.author.username].role];
                 const ability = authorRole.abilities[action];
@@ -174,7 +180,10 @@ client.on("message", async message => {
                 if (args[1] === null) return message.author.send("You must provide the username of your target.");
                 if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
                 if (game.alive[args[1]] === null) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+                if (message.author.username === target) return message.author.send(`You can't ${action} yourself.`);
                 if (game.alive[args[1]] !== null && ability[0] >= 1) {
+                    ability[0]--;
+                    if (getUserByRole("Jailor")) message.author.send(`User with Jailor is ${getUserByRole("Jailor").username}.`);
                     game.actions[authorRole.priority][message.author.username] = {
                         action: action,
                         target: target
