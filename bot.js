@@ -238,7 +238,7 @@ client.on("message", async message => {
             investigate - gives two options for target's role
             heal - heals target
         */
-        const roleActions = ["lock", "block", "kill", "investigate", "heal"];
+        const roleActions = ["sleep", "lock", "block", "kill", "investigate", "heal"];
         var i = 0;
         while (i < roleActions.length) {
             if (args[0] === roleActions[i]) return gameAction(args[0], args[1]);
