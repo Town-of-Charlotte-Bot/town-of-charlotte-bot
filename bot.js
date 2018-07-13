@@ -135,7 +135,8 @@ var game = {
         p1: {},
         p0: {},
         p_1: {}
-    }
+    },
+    numActed: []
 };
 
 var setup = {
@@ -334,12 +335,12 @@ client.on("message", async message => {
             switch (args[0]) {
                 case "join":
                     if (!setup.gameNow) message.reply("There is no game to join. Perhaps a game has not been started, or one is already in progress.");
-                    if (setup.gameNow && listed) {
+                    if (setup.gameNow && !listed) {
                         message.member.addRole(playingRole).catch(error => message.reply(`Failed to perform action: ${error}`));
                         game.alive[message.author.username] = new Player(message.author, "Jailor");
                         message.channel.send(`_${message.author} has joined the game._`);
                         
-                        return message.author.send(`Your role is _${game.alive[message.author.username].role}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.send(`Your role is _${game.alive[message.author.username].role}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (setup.gameNow && listed) {
                         message.reply("You have already joined the game.");
