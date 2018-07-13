@@ -210,6 +210,16 @@ client.on("debug", debug => {
     logs.push(debug);
 });
 
+var isEven = function(n) {
+    return (n % 2 === 0) ? true : false;
+};
+
+var ifUserWithRole = function(role) {
+    var string = JSON.stringify(game.alive);
+    console.log(string);
+    return (string.indexOf(role) === -1) ? false : true;
+};
+
 client.on("message", async message => {
     if (message.author.bot) return;
     if (message.content.indexOf(prefix) !== 0) return;
@@ -219,12 +229,6 @@ client.on("message", async message => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
     const listed = (game.alive[message.author.username] === undefined) ? false : true;
-    
-    var ifUserWithRole = function(role) {
-        var string = JSON.stringify(game.alive);
-        console.log(string);
-        return (string.indexOf(role) === -1) ? false : true;
-    };
     
     var runActions = function() {
         console.log("All players have done their actions!");
@@ -297,6 +301,7 @@ client.on("message", async message => {
                 if (game.numActed.length === Object.keys(game.alive).length) {
                     runActions();
                 }
+                return;
             }
             i++;
         }
