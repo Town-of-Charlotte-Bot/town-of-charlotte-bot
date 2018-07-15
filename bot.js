@@ -194,11 +194,12 @@ var Player = function(name, role) {
     this.role = role;
     this.infoText = roles[this.role].txt;
     this.getAbilities = roles[this.role].abilities;
+    this.canTargetSelf = roles[this.role].canTargetSelf;
+    this.canSleep = roles[this.role].canSleep;
+    this.actsPerNight = roles[this.role].actsPerNight;
     this.hasImmunity = function(type) {
         return roles[this.role].immunity[type];
     };
-    this.isAlive = (Object.keys(game.alive).indexOf(this.username) === -1) ? false : true;
-    this.isDead = (Object.keys(game.dead).indexOf(this.username) === -1) ? false : true;
 };
 
 client.on("ready", () => {
@@ -368,19 +369,40 @@ client.on("message", async message => {
                     author: {
                         name: "> Game Info <"
                     },
-                    title: "How to play the Town of Charlotte game",
+                    title: "Welcome to the Town of Charlotte!",
                     fields: [
                         {
-                            name: "Goal",
-                            value: "Info"
+                            name: "We have lots of good Townsfolk, but a little organized crime (Mafia), and a few loners (Neutral).",
+                            value: "- The town always has a Jailor, 1 or more healing roles, and 1 or more investigative roles. We usually have lots of other roles too, depending on the population size. There might even be more than 1 of the same role!\n"
+                                + "- The Mafia always has a Godfather and 1 killer. They often have 1 or more additional roles, depending on the population (usually Mafia is about 1/4 of the population, give or take).\n"
+                                + '- Neutral roles are not aligned with the Town or Mafia, and have their own unique win conditions. Usually 1-2 of these may be "armed and dangerous."'
                         },
                         {
-                            name: "Starting a game",
-                            value: "More info"
+                            name: "Typical Night",
+                            value: "- Mafia kills someone (can only be stopped if target has Night Immunity, or both the Godfather and the Mafia killer are Role-Blocked).\n"
+                                + "- Neutral killer (Arsonist, Serial Killer, Terrorist, Vampire, Werewolf) will select a victim.\n"
+                                + "- Investiagtive roles collect information which they may choose to share or not."
                         },
                         {
-                            name: "During the game",
-                            value: "Even more info"
+                            name: "Typical Day",
+                            value: "- Deaths are reported, along with how they died.\n"
+                                + "- Open discussion amongst the town. People can share information they have gained, make accusations, or claim to be a role... but not everyone will tell the truth!\n"
+                                + "- Vote to lynch a suspicious town member, where the majority wins."
+                        },
+                        {
+                            name: "Night Immunity",
+                            value: "Can't be killed at night if targeted, except for Werewolf or Arsonist attacks. Still die if run into Bodyguard, Terrorist, or Veteran; and can be executed by Jailor.\n"
+                                + "***Arsonist, Godfather, Psychopath, Serial Killer***"
+                        },
+                        {
+                            name: "Role-Blockers",
+                            value: "Prevent their targets from performing their actions that night.\n"
+                                + "***Comedian, Hypnotist, Jailor***"
+                        },
+                        {
+                            name: "Confusion Roles",
+                            value: "May change the outcome of a person's actions.\n"
+                                + "***Cleaner, Doctor, Framer, Intimidator, Master of Disguise, Teleporter, Uber Driver***"
                         }
                     ],
                     footer: {
@@ -401,7 +423,23 @@ client.on("message", async message => {
                         game.alive[message.author.username] = new Player(message.author, "Jailor");
                         message.channel.send(`_${message.author} has joined the game._`);
                         
-                        message.author.send(`Your role is _${game.alive[message.author.username].role}_.\n${game.alive[message.author.username].infoText}`).catch(error => message.reply(`Failed to perform action: ${error}`));
+                        message.author.send({
+                            embed: {
+                                //color: 3447003,
+                                author: {
+                                    name: "> You Joined the Game <"
+                                },
+                                fields: [
+                                    {
+                                        name: `Your role is _${game.alive[message.author.username].role}_`,
+                                        value: game.alive[message.author.username].infoText
+                                    }
+                                ],
+                                footer: {
+                                    text: `Need help? In the server chat type ${prefix}help`
+                                }
+                            }
+                        }).catch(error => message.reply(`Failed to perform action: ${error}`));
                     }
                     if (setup.gameNow && listed) {
                         message.reply("You have already joined the game.");
@@ -503,7 +541,7 @@ client.on("message", async message => {
                                 fields: [
                                     {
                                         name: "The game is afoot!",
-                                        value: "No more players may join. The game will now begin!"
+                                        value: "No more players may join. The first night has started - DM me your actions!"
                                     }
                                 ],
                                 footer: {
