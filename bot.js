@@ -431,7 +431,7 @@ client.on("message", async message => {
                                 },
                                 fields: [
                                     {
-                                        name: `Your role is _${game.alive[message.author.username].role}_`,
+                                        name: `Your role is _${game.alive[message.author.username].role}_.`,
                                         value: game.alive[message.author.username].infoText
                                     }
                                 ],
