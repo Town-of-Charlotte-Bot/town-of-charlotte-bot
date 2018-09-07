@@ -149,7 +149,7 @@ var roles = {
 };
 
 /*
-    Internal Game Data Keys
+    Internal Game-Data Keys
     
     day - The in-game day
     nightlyDead - The players who died in the previous night; key: username, data: role
@@ -157,7 +157,7 @@ var roles = {
     dead - The players who have died; key: username, data: Object
     master - The Gamemaster; stores username and id as .username and .id
     actions - The actions taken during the previous/current night; key: username, data: Object
-    numActed - The number of players that have performed an action that night (no data stored, only .length)
+    numActed - The number of players that have performed an action that night (no data stored, only .length property used)
 */
 var game = {
     day: 0,
@@ -231,8 +231,10 @@ client.on("message", async message => {
     const command = args.shift().toLowerCase();
     const listed = (game.alive[message.author.username] === undefined) ? false : true;
     
+    // Run algorithm to figure out what happened during the night
     var runActions = function() {
-        console.log("All players have done their actions!");
+        console.log(`Night ${game.day} is over. All players have done their actions!`);
+        console.log(JSON.stringify(game.actions.p6));
     };
     
     if (command === "action") {
@@ -290,7 +292,7 @@ client.on("message", async message => {
             lock - role-blocks target, protects from harm
             block - role-blocks target
             kill - kills target
-            investigate - gives two options for target's role
+            investigate - gives two pre-chosen options for target's role
             heal - heals target
         */
         const roleActions = ["sleep", "lock", "block", "kill", "investigate", "heal"];
