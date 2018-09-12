@@ -233,8 +233,7 @@ client.on("message", async message => {
     
     // Run algorithm to figure out what happened during the night
     var runActions = function() {
-        console.log(`Night ${game.day} is over. All players have done their actions!`);
-        console.log(JSON.stringify(game.actions.p6));
+        console.log(`Night ${game.day} is over. All players have done their actions!\n${JSON.stringify(game.actions.p6)}`);
     };
     
     if (command === "action") {
