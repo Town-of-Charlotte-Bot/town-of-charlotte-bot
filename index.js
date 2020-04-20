@@ -1,3 +1,13 @@
+/*
+  Requirements:
+  
+  - Admins must have the role "Gamemaster"
+  - Bot must have the role "Gamemaster"
+  - Server must have the role "Playing Game" (currently an ID assignment)
+  
+  - use .awaitMessages for lynching
+*/
+
 // Keep the bot online
 var express = require("express")
 var app = express()
@@ -13,6 +23,7 @@ const client = new Discord.Client()
 const TOKEN = process.env.TOKEN
 const prefix = "."
 const gameTitle = "Town of Salem"
+const playRole = "458590289477763073"
 const commands = {
     help: {
         info: "Displays the help screen, with the list of all commands",
@@ -265,10 +276,13 @@ var game = {
     numActed: []
 };
 
+var roleExists = function(role) {
+    var string = JSON.stringify(game.alive);
+    return (string.indexOf(role) === -1) ? false : true;
+};
+
 /*
-  Player prototype (name: msg.author; role: player role)
-  
-  
+  Player prototype (user: msg.author; name: author.tag; role: player role)
 */
 var Player = function(user) {
     this.name = user.tag;
@@ -284,7 +298,6 @@ var Player = function(user) {
 };
 
 var setup = {
-    roleType: 1,
     gameQueued: false,
     playing: false,
     addPlayer: function(author) {
@@ -295,8 +308,7 @@ var setup = {
     },
     removePlayer: function(author) {
         delete game.alive[author.tag]
-    },
-    players: []
+    }
 };
 
 
@@ -309,20 +321,33 @@ client.on("debug", debug => {
     logs.push(debug);
 });
 
+
 client.on("message", async msg => {
     if (msg.author.bot) return;
+    
+    // DMs
+    if (msg.channel.type === "dm") msg.author.send("Yay, it works!")
+    
+    // Everything from here on out is a server command and needs the prefix
     if (msg.content.indexOf(prefix) !== 0) return;
-  
+    
+    // Example of sending a DM to user by ID
+    msg.guild.members.fetch("211220824265326594").then(user => {user.send("heloo",)})
+    
+    // Split message into array of arguments
+    let arg = msg.content.trim().toLowerCase().slice(prefix.length, msg.content.length).split(/ +/g);
+    // console.log(arg)
+    
     // Check the game.alive object for whether the one who messaged is listed or not
     var listed = (setup.getPlayer(msg.author) === undefined) ? false : true;
     
     // Check for Discord roles
     let role = msg.member.roles.cache.some(r=>["Gamemaster"].includes(r.name));
-    let playingRole = msg.guild.roles.fetch("458590289477763073");
-    // console.log(playingRole)
+    let playingRole = msg.guild.roles.fetch(playRole);
+    // console.log(msg.guild.roles.find("name", "Playing Game"))
   
     // General commands
-    if (msg.content === prefix + "help") {
+    if (arg[0] === "help") {
         msg.channel.send({
             embed: {
                 //color: 3447003,
@@ -369,11 +394,11 @@ client.on("message", async msg => {
             }
         }).catch(error => msg.reply(`Failed to perform action: ${error}`));
     }
-    else if (msg.content === prefix + "ping") {
+    else if (arg[0] === "ping") {
         const temp = await msg.channel.send("Pinging...").catch(error => msg.reply(`Failed to perform action: ${error}`));
         temp.edit(`Pong! Latency is ${temp.createdTimestamp - msg.createdTimestamp}ms.`);
     }
-    else if (msg.content === prefix + "info") {
+    else if (arg[0] === "info") {
         msg.channel.send({
             embed: {
                 //color: 3447003,
@@ -423,399 +448,296 @@ client.on("message", async msg => {
             }
         }).catch(error => message.reply(`Failed to perform action: ${error}`));
     }
-    else if (msg.content === prefix + "settings") {
+    else if (arg[0] === "settings") {
         msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`));
     }
-    else if (msg.content === prefix + "tip") {
+    else if (arg[0] === "tip") {
         msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`));
     }
     
     // Game commands
-    else if (msg.content === prefix + "game join") {
-        if (!setup.gameQueued) return msg.reply("there is no game to join. Either a game has not been queued, or one has already started.")
-        if (setup.gameQueued && !listed) {
-            if (role && game.master.id === msg.author.id) return msg.reply("you are the Gamemaster for the current game.")
-            
-            setup.addPlayer(msg.author)
-            msg.member.roles.add("458590289477763073").catch(error => msg.reply(`Failed to perform action: ${error}`))
-            
-            msg.author.send({
-                embed: {
-                    //color: 3447003,
-                    title: "> You've joined the game.",
-                    fields: [
-                        {
-                            name: `Welcome to ${gameTitle}!`,
-                            value: "You will be DMed your role once the game is started."
+    else if (arg[0] === "game") {
+        if (arg[1] === "join") {
+            if (!setup.gameQueued) return msg.reply("there is no game to join. Either a game has not been queued, or one has already started.")
+            if (setup.gameQueued && !listed) {
+                if (role && msg.author.tag === game.master) return msg.reply("you are the Gamemaster for the current game.")
+
+                setup.addPlayer(msg.author)
+                msg.member.roles.add(playRole).catch(error => msg.reply(`Failed to perform action: ${error}`))
+
+                msg.author.send({
+                    embed: {
+                        //color: 3447003,
+                        title: "> You've joined the game.",
+                        fields: [
+                            {
+                                name: `Welcome to ${gameTitle}!`,
+                                value: "You will be DMed your role once the game is started."
+                            }
+                        ],
+                        footer: {
+                            text: `Need help? In the server chat type ${prefix}help`
                         }
-                    ],
-                    footer: {
-                        text: `Need help? In the server chat type ${prefix}help`
                     }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`))
-            msg.channel.send(`_${msg.author} has joined the game._`)
-        } else if (setup.gameQueued && listed) msg.reply("you have already joined the game.")
-    }
-    else if (msg.content === prefix + "game leave") {
-        if (role && game.master.id === msg.author.id) return msg.reply(`you are the Gamemaster and cannot leave the game. If you wish to end the current game, type \`${prefix}game end\`.`)
-        else if (listed) {
-            setup.removePlayer(msg.author)
-            msg.member.roles.remove("458590289477763073").catch(error => msg.reply(`Failed to perform action: ${error}`));
-            
-            return msg.channel.send(`_${msg.author} has left the game._`).catch(error => msg.reply(`Failed to perform action: ${error}`));
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                msg.channel.send(`_${msg.author} has joined the game._`)
+            } else if (setup.gameQueued && listed) msg.reply("you have already joined the game.")
         }
-        if (!listed) return msg.reply("there is no game to leave. Either a game has not been started, or you are not joined.");
-    }
-    else if (msg.content === prefix + "game players") {
-        if (!setup.gameQueued && !setup.playing) msg.reply("a game has not been started.")
-        else if (setup.gameQueued || setup.playing) {
-            msg.channel.send({
-                embed: {
-                    //color: 3447003,
-                    title: "> Players\n\nList of players in the current game:",
-                    fields: [
-                        {
-                            name: "Alive",
-                            value: Object.keys(game.alive).join("\n")
-                        },
-                        {
-                            name: "Dead",
-                            value: (Object.keys(game.dead).length === 0) ? "No players" : Object.keys(game.dead).length
-                        },
-                        {
-                            name: "Total Players",
-                            value: Object.keys(game.alive).length
+        else if (arg[1] === "leave") {
+            if (role && msg.author.tag === game.master) return msg.reply(`you are the Gamemaster and cannot leave the game. If you wish to end the current game, type \`${prefix}game end\`.`)
+            else if (listed) {
+                setup.removePlayer(msg.author)
+                msg.member.roles.remove(playRole).catch(error => msg.reply(`Failed to perform action: ${error}`));
+
+                return msg.channel.send(`_${msg.author} has left the game._`).catch(error => msg.reply(`Failed to perform action: ${error}`));
+            }
+            if (!listed) return msg.reply("there is no game to leave. Either a game has not been started, or you are not joined.");
+        }
+        else if (arg[1] === "players") {
+            if (!setup.gameQueued && !setup.playing) msg.reply("a game has not been started.")
+            else if (setup.gameQueued || setup.playing) {
+                msg.channel.send({
+                    embed: {
+                        //color: 3447003,
+                        title: "> Players\n\nList of players in the current game:",
+                        fields: [
+                            {
+                                name: "Alive",
+                                value: Object.keys(game.alive).join("\n")
+                            },
+                            {
+                                name: "Dead",
+                                value: (Object.keys(game.dead).length === 0) ? "No players" : Object.keys(game.dead).length
+                            },
+                            {
+                                name: "Total Players",
+                                value: Object.keys(game.alive).length
+                            }
+                        ],
+                        footer: {
+                            text: `Not what you're looking for? ${prefix}help`
                         }
-                    ],
-                    footer: {
-                        text: `Not what you're looking for? ${prefix}help`
                     }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`));
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`));
+            }
+        }
+        else if (arg[1] === "queue") {
+            if (!role) msg.reply("you are not a Gamemaster and cannot queue a game.");
+            else if (setup.gameQueued || setup.playing) msg.reply("a game has already been queued.");
+            else if (!setup.gameQueued && !setup.playing) {
+                setup.gameQueued = true
+                game.master = msg.author.tag
+
+                setup.addPlayer(msg.author)
+                msg.member.roles.add(playRole).catch(error => msg.reply(`Failed to perform action: ${error}`))
+
+                msg.author.send({
+                    embed: {
+                        //color: 3447003,
+                        title: "> You are the Gamemaster.",
+                        fields: [
+                            {
+                                name: "You are the narrator. After each night the action log will be DMed to you. During the game you can access additional commands and view secret stats about the players.",
+                                value: "You will be DMed your role once the game is started."
+                            }
+                        ],
+                        footer: {
+                            text: `Need help? In the server chat type ${prefix}help`
+                        }
+                    }
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                msg.channel.send({
+                    embed: {
+                        //color: 3447003,
+                        title: "> Game Queued",
+                        fields: [
+                            {
+                                name: `A new _${gameTitle}_ game has just been queued.`,
+                                value: `To join, type \`${prefix}game join\`. The Gamemaster will start the game shortly.`
+                            }
+                        ],
+                        footer: {
+                            text: `Need help? ${prefix}help`
+                        }
+                    }
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+            }
+        }
+        else if (arg[1] === "start") {
+            if (!role) msg.reply("you are not a Gamemaster and cannot start a game.")
+            else if (!setup.gameQueued) msg.reply("there is no game to start.")
+            else if (setup.gameQueued) {
+                setup.gameQueued = false
+                setup.playing = true
+
+                // Loop through each player in game.alive and send them their roles
+                /*msg.author.send({
+                    embed: {
+                        //color: 3447003,
+                        title: `> Night 1 has started.`,
+                        fields: [
+                            {
+                                name: `Your role is _${setup.getPlayer(msg.author).role}_.`,
+                                value: "Nothing here yet..."
+                                // value: setup.getPlayer(msg.author).infoText
+                            }
+                        ],
+                        footer: {
+                            text: `Need help? In the server chat type ${prefix}help`
+                        }
+                    }
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`));*/
+                msg.channel.send({
+                    embed: {
+                        //color: 3447003,
+                        title: `> The _${gameTitle}_ game has started!`,
+                        fields: [
+                            {
+                                name: `No more players may join.`,
+                                value: "The first night has begun... DM me your targets!"
+                            }
+                        ],
+                        footer: {
+                            text: `Need help? ${prefix}help`
+                        }
+                    }
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`));
+            }
+        }
+        else if (arg[1] === "end") {
+            if (!role) msg.reply("you are not a Gamemaster and cannot end a game.");
+            else if (setup.gameQueued || !setup.playing) msg.reply(`there is no game to end. If a game has been queued, type \`${prefix}game start\` and then \`${prefix}game end\`.`);
+            else if (!setup.gameQueued && setup.playing) {
+                setup.playing = false
+                game = {
+                    day: 0,
+                    nightlyDead: [],
+                    alive: {},
+                    dead: {},
+                    players: {},
+                    master: ""
+                };
+
+                msg.member.roles.remove(playRole).catch(error => msg.reply(`Failed to perform action: ${error}`));
+
+                msg.channel.send({
+                    embed: {
+                        //color: 3447003,
+                        title: `> The current game has been ended.`,
+                        footer: {
+                            text: `Need help? ${prefix}help`
+                        }
+                    }
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`));
+            }
+        }
+        else if (arg[1] === "stats") {
+            msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
+        }
+        else {
+            msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\`.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
         }
     }
-    else if (msg.content === prefix + "game queue") {
-        if (!role) msg.reply("you are not a Gamemaster and cannot queue a game.");
-        else if (setup.gameQueued || setup.playing) msg.reply("a game has already been queued.");
-        else if (!setup.gameQueued && !setup.playing) {
-            setup.gameQueued = true
-            game.master = msg.author.tag
-            
-            setup.addPlayer(msg.author)
-            msg.member.roles.add("458590289477763073").catch(error => msg.reply(`Failed to perform action: ${error}`))
-            
-            msg.author.send({
-                embed: {
-                    //color: 3447003,
-                    title: "> You are the Gamemaster.",
-                    fields: [
-                        {
-                            name: "After each night the action log will be DMed to you. If necessary, during the game you can view secret stats about the players and access additional commands.",
-                            value: "You will be DMed your role once the game is started."
-                        }
-                    ],
-                    footer: {
-                        text: `Need help? In the server chat type ${prefix}help`
-                    }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`))
-            msg.channel.send({
-                embed: {
-                    //color: 3447003,
-                    title: "> Game Queued",
-                    fields: [
-                        {
-                            name: `A new _${gameTitle}_ game has just been queued.`,
-                            value: `To join, type \`${prefix}game join\`. The Gamemaster will be starting the game shortly.`
-                        }
-                    ],
-                    footer: {
-                        text: `Need help? ${prefix}help`
-                    }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`))
-        }
+    
+    // Gamemaster-only commands
+    else if (arg[0] === "delete") {
+        msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
     }
-    else if (msg.content === prefix + "game start") {
-        if (!role) msg.reply("you are not a Gamemaster and cannot start a game.")
-        else if (!setup.gameQueued) msg.reply("there is no game to start.")
-        else if (setup.gameQueued) {
-            setup.gameQueued = false
-            setup.playing = true
-            
-            /*msg.author.send({
-                embed: {
-                    //color: 3447003,
-                    title: `> Night 1 has started.`,
-                    fields: [
-                        {
-                            name: `Your role is _${setup.getPlayer(msg.author).role}_.`,
-                            value: "Nothing here yet..."
-                            // value: setup.getPlayer(msg.author).infoText
-                        }
-                    ],
-                    footer: {
-                        text: `Need help? In the server chat type ${prefix}help`
-                    }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`));*/
-            msg.channel.send({
-                embed: {
-                    //color: 3447003,
-                    title: `> The _${gameTitle}_ game has started!`,
-                    fields: [
-                        {
-                            name: `No more players may join.`,
-                            value: "The first night has begun... DM me your targets!"
-                        }
-                    ],
-                    footer: {
-                        text: `Need help? ${prefix}help`
-                    }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`));
-        }
+    else if (arg[0] === "print") {
+        msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
+        /*if (!role) msg.reply("you are not a Gamemaster and cannot run test commands.")
+        else {
+            var content = eval(msg.content.substr(prefix.length + 6))
+            return msg.channel.send((content == "") ? "_[ Empty Message ]_" : content)
+        }*/
     }
-    else if (msg.content === prefix + "game end") {
-        if (!role) msg.reply("you are not a Gamemaster and cannot end a game.");
-        else if (setup.gameQueued || !setup.playing) msg.reply(`there is no game to end. If a game has been queued, type \`${prefix}game start\` and then \`${prefix}game end\`.`);
-        else if (!setup.gameQueued && setup.playing) {
-            setup.playing = false
-            game = {
-                day: 0,
-                nightlyDead: [],
-                alive: {},
-                dead: [],
-                players: {},
-                master: ""
-            };
-            
-            msg.channel.send({
-                embed: {
-                    //color: 3447003,
-                    title: `> The current game has been ended.`,
-                    footer: {
-                        text: `Need help? ${prefix}help`
-                    }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`));
-        }
+    else {
+        msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\`.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
     }
-  
-  
-    // Gamemaster commands
 });
 
-/*
-var isEven = function(n) {
-    return (n % 2 === 0) ? true : false;
-};
+/*{
+  client.on("message", async message => {
 
-var ifUserWithRole = function(role) {
-    var string = JSON.stringify(game.alive);
-    console.log(string);
-    return (string.indexOf(role) === -1) ? false : true;
-};
+      // Run algorithm to figure out what happened during the night
+      var runActions = function() {
+          console.log(`Night ${game.day} is over. All players have done their actions!\n${JSON.stringify(game.actions.p6)}`);
+      };
 
-client.on("message", async message => {
-    
-    const displayedName = message.author.username.replace(/ /g, "_");
-    
-    const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    const command = args.shift().toLowerCase();
-    const listed = (game.alive[message.author.username] === undefined) ? false : true;
-    
-    // Run algorithm to figure out what happened during the night
-    var runActions = function() {
-        console.log(`Night ${game.day} is over. All players have done their actions!\n${JSON.stringify(game.actions.p6)}`);
-    };
-    
-    if (command === "action") {
-        var gameAction = function(action, target) {
-            const authorRole = roles[game.alive[message.author.username].role];
-            const ability = authorRole.abilities[action];
+      if (command === "action") {
+          var gameAction = function(action, target) {
+              const authorRole = roles[game.alive[message.author.username].role];
+              const ability = authorRole.abilities[action];
 
-            if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
-            if (authorRole.actsPerNight > 0) {
-                if (action === "sleep") {
-                    if (authorRole.canSleep) {
-                        authorRole.actsPerNight = 0;
-                        game.actions[authorRole.priority][message.author.username] = {
-                            action: "sleep",
-                            target: undefined
-                        };
-                        return message.author.send("You have gone to sleep.");
-                    } else return message.author.send("You do not have the ability to sleep.");
-                }
-                if (args[1] === undefined) return message.author.send("You must provide the username of your target.");
-                if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
-                if (game.alive[args[1]] === undefined) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
-                if (message.author.username === target) {
-                    if (authorRole.canTargetSelf > 0) {
-                        ability[0]--;
-                        authorRole.canTargetSelf--;
-                        authorRole.actsPerNight--;
-                        game.actions[authorRole.priority][message.author.username] = {
-                            action: action,
-                            target: target
-                        };
-                        return message.author.send(`_You ${action}ed yourself._`);
-                    } else return message.author.send(`You can't ${action} yourself.`);
-                }
-                if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
-                    ability[0]--;
-                    authorRole.actsPerNight--;
-                    game.actions[authorRole.priority][message.author.username] = {
-                        action: action,
-                        target: target
-                    };
-                    return client.fetchUser(game.alive[args[1]].id).then(user => {
-                        message.author.send(`_${args[1]} will be ${action}ed._`);
-                        if (ability[1] !== undefined) user.send(ability[1]);
-                    }).catch(error => message.author.send(`Failed to perform action: ${error}`));
-                }
-            } else {
-                return message.author.send("You cannot perform multiple actions during the same night.");
-            }
-        };
+              if (game.alive[message.author.username] === undefined) return message.author.send("You are not playing in the current game.");
+              if (authorRole.actsPerNight > 0) {
+                  if (action === "sleep") {
+                      if (authorRole.canSleep) {
+                          authorRole.actsPerNight = 0;
+                          game.actions[authorRole.priority][message.author.username] = {
+                              action: "sleep",
+                              target: undefined
+                          };
+                          return message.author.send("You have gone to sleep.");
+                      } else return message.author.send("You do not have the ability to sleep.");
+                  }
+                  if (args[1] === undefined) return message.author.send("You must provide the username of your target.");
+                  if (ability === undefined || ability[0] < 1) return message.author.send(`You do not have the ability to ${action} anyone.`);
+                  if (game.alive[args[1]] === undefined) return message.author.send(`That player could not be ${action}ed. Perhaps you spelled the name incorrectly, or the player is dead.`);
+                  if (message.author.username === target) {
+                      if (authorRole.canTargetSelf > 0) {
+                          ability[0]--;
+                          authorRole.canTargetSelf--;
+                          authorRole.actsPerNight--;
+                          game.actions[authorRole.priority][message.author.username] = {
+                              action: action,
+                              target: target
+                          };
+                          return message.author.send(`_You ${action}ed yourself._`);
+                      } else return message.author.send(`You can't ${action} yourself.`);
+                  }
+                  if (game.alive[args[1]] !== undefined && ability[0] >= 1) {
+                      ability[0]--;
+                      authorRole.actsPerNight--;
+                      game.actions[authorRole.priority][message.author.username] = {
+                          action: action,
+                          target: target
+                      };
+                      return client.fetchUser(game.alive[args[1]].id).then(user => {
+                          message.author.send(`_${args[1]} will be ${action}ed._`);
+                          if (ability[1] !== undefined) user.send(ability[1]);
+                      }).catch(error => message.author.send(`Failed to perform action: ${error}`));
+                  }
+              } else {
+                  return message.author.send("You cannot perform multiple actions during the same night.");
+              }
+          };
 
-        /*
-            Role Actions:
+          /*
+              Role Actions:
 
-            lock - role-blocks target, protects from harm
-            block - role-blocks target
-            kill - kills target
-            investigate - gives two pre-chosen options for target's role
-            heal - heals target
-        *//*
-        const roleActions = ["sleep", "lock", "block", "kill", "investigate", "heal"];
-        var i = 0;
-        while (i < roleActions.length) {
-            if (args[0] === roleActions[i]) {
-                gameAction(args[0], args[1]);
-                game.numActed.push();
-                if (game.numActed.length === Object.keys(game.alive).length) {
-                    runActions();
-                }
-                return;
-            }
-            i++;
-        }
-        if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
-    }
-    
-    switch (command) {
-        case "game":
-            switch (args[0]) {
-                case "end":
-                    if (!role) message.reply("You are not authorized to perform this action.");
-                    if (role && (setup.gameNow || !setup.playing)) message.reply("There is no current game to end. If a game has just been started, type `//game begin` and then `//game end`.");
-                    if (role && !setup.gameNow && setup.playing) {
-                        setup.gameNow = false;
-                        setup.playing = false;
-                        game = {
-                            day: 0,
-                            nightlyDead: [],
-                            alive: {},
-                            dead: [],
-                            players: {},
-                            master: ""
-                        };
-                        message.channel.send("The current game has been ended.").catch(error => message.reply(`Failed to perform action: ${error}`));
-                    }
-                    break;
-                case "stats":
-                    if (!setup.playing) message.reply("There is no current game to show the stats of.");
-                    if (setup.playing) {
-                        message.channel.send({
-                            embed: {
-                                //color: 3447003,
-                                author: {
-                                    name: "> Vital Statistics <"
-                                },
-                                title: "Current game stats",
-                                fields: [
-                                    {
-                                        name: "General",
-                                        value: "Day " + game.day + "\n"
-                                            + "Died last night:\n" + (game.nightlyDead.length >= 1) ? game.nightlyDead.join("\n") : "None"
-                                    },
-                                    {
-                                        name: "Alive",
-                                        value: (Object.keys(game.alive).length >= 1) ? Object.keys(game.alive).join("\n") : "None"
-                                    },
-                                    {
-                                        name: "Dead",
-                                        value: (Object.keys(game.dead).length >= 1) ? Object.keys(game.dead).join("\n") : "None"
-                                    }
-                                ],
-                                footer: {
-                                    text: `Not what you're looking for? ${prefix}help`
-                                }
-                            }
-                        }).catch(error => message.reply(`Failed to perform action: ${error}`));
-                    }
-            }
-            break;
-        case "roles":
-            message.channel.send({
-                embed: {
-                    //color: 3447003,
-                    author: {
-                        name: "> Game Roles <"
-                    },
-                    title: "List of all roles in the Town of Charlotte game",
-                    fields: [
-                        {
-                            name: "Role1",
-                            value: "Brief summary"
-                        },
-                        {
-                            name: "Role2",
-                            value: "Another brief summary"
-                        }
-                    ],
-                    footer: {
-                        text: `Not what you're looking for? ${prefix}help`
-                    }
-                }
-            }).catch(error => message.reply(`Failed to perform action: ${error}`));
-            break;
-        case "delete":
-            if (!role) message.reply("You are not authorized to perform this action.");
-            if (role) {
-                const deleteCount = Number(args[0]);
-
-                if (!deleteCount) message.reply("Please provide the number of messages to delete.");
-                else if (deleteCount < 2 || deleteCount > 100) message.reply("The number you provided is either too small or too large.");
-
-                const fetched = await message.channel.fetchMessages({
-                    limit: deleteCount
-                });
-                message.channel.bulkDelete(fetched).catch(error => message.reply(`Failed to perform action: ${error}`));
-                console.log(`${message.member} cleared ${deleteCount} messages in ${message.channel}.`);
-                message.reply(`_Cleared ${deleteCount} messages._`);
-            }
-            break;
-        case "logs":
-            //message.channel.send(logs.join("\n"));
-            message.reply("This command is not working yet.");
-            break;
-        case "logieboi":
-            message.channel.send(":bear: ***Logie da Bear!*** :bear:");
-            break;
-        case "konurpapa":
-            message.channel.send("_Woot!_");
-    }
-    if (message.content.startsWith(prefix + "print")) {
-        if (!role) message.reply("You are not authorized to perform this action.");
-        if (role) {
-            var content = eval(message.content.substr(7));
-            if (content == "") content = "_[ Empty Message ]_";
-            message.channel.send(content);
-        }
-    }
-});*/
+              lock - role-blocks target, protects from harm
+              block - role-blocks target
+              kill - kills target
+              investigate - gives two pre-chosen options for target's role
+              heal - heals target
+          *//*
+          const roleActions = ["sleep", "lock", "block", "kill", "investigate", "heal"];
+          var i = 0;
+          while (i < roleActions.length) {
+              if (args[0] === roleActions[i]) {
+                  gameAction(args[0], args[1]);
+                  game.numActed.push();
+                  if (game.numActed.length === Object.keys(game.alive).length) {
+                      runActions();
+                  }
+                  return;
+              }
+              i++;
+          }
+          if (i === roleActions.length) return message.author.send("That action does not exist. Perhaps you spelled it incorrectly, or the action you were thinking of is different.");
+      }
+  });
+}*/
 
 client.login(TOKEN)
