@@ -28,15 +28,16 @@ const TOKEN = process.env.TOKEN
 const prefix = "."
 const gameTitle = "Town of Salem"
 const playRole = "458590289477763073"
-let logs = []
+let logs = [],
 
 
+// Role Database
 /*
     Role: {
         name: "Role",
         txt: "This is info text."
         action: {
-            action1: [Infinity, "This alert message is sent to the target"],
+            action1: [Infinity, "This alert message is sent to the target"], // Message is only sent to target if role action goes through
             action2: [3, "This alert message is sent to the target"]
         }
         immune: {
@@ -53,7 +54,7 @@ let logs = []
     }
 */
 
-let roles = {
+roles = {
     // Necessary
     Jailor: {
         name: "Jailor",
@@ -99,6 +100,19 @@ let roles = {
         canTarget: true,
         canSleep: true
     },
+    Bodyguard: {
+        name: "Bodyguard",
+        txt: "Protect someone from an attacker, killing them and also dying yourself. You may make yourself immune 1 night without guarding",
+        action: {
+            heal: [Infinity, "The bodyguard protected you!"]
+        },
+        immune: {},
+        looksLike: "",
+        team: "town",
+        type: "protection",
+        canTarget: true,
+        canSleep: true
+    },
   
     // Town Support
     Comedian: {
@@ -106,6 +120,19 @@ let roles = {
         txt: "Distract 1 person each night, preventing thier night action(s).",
         action: {
             rb: [Infinity, "You were role-blocked!"]
+        },
+        immune: {},
+        looksLike: "",
+        team: "town",
+        type: "support",
+        canTarget: true,
+        canSleep: true
+    },
+    Intimidator: {
+        name: "Intimidator",
+        txt: "Players right next to you know your role and must vote with you. They cannot reveal your role, and you survive 1 normal gunshot",
+        action: {
+            rb: [Infinity, `You have been intimidated by __! You must vote with them in all town lynchings.`]
         },
         immune: {},
         looksLike: "",
@@ -134,6 +161,19 @@ let roles = {
     Investigator: {
         name: "Investigator",
         txt: "Target 1 person each night for a clue to their role (lists some possible roles).",
+        action: {
+            investigate: [Infinity]
+        },
+        immune: {},
+        looksLike: "",
+        team: "town",
+        type: "investigative",
+        canTarget: true,
+        canSleep: true
+    },
+    Lookout: {
+        name: "Lookout",
+        txt: "Watch 1 person to see who visits them",
         action: {
             investigate: [Infinity]
         },
@@ -188,25 +228,40 @@ let roles = {
         canTarget: true,
         canSleep: false
     }
-    
-    // Rarely-used roles (have not been set up)
-    /*Mafioso: {
-        name: "Mafioso",
-        txt: "Carry out the Godfather's order and kill his target. You become Godfather if he dies.",
-        action: {},
-        immune: {},
-        team: "mafia",
-        canTarget: true
-    },*/
 },
-    townProtective = [],
-    townSupport = [],
-    townKilling = [],
-    townInvestigative = [],
-    mafia = [],
-    neutralBenign = [],
-    neutralEvil = [],
-    neutralKilling = []
+townProtective = [],
+townSupport = [],
+townKilling = [],
+townInvestigative = [],
+mafia = [],
+neutralBenign = [],
+neutralEvil = [],
+neutralKilling = [],
+
+    
+/*
+    Internal Game-Data Keys
+    
+    day - The in-game day
+    alive - The players who are alive; key: user tag, data: Player Object
+    dead - The players who have died; key: user tag, data: Player Object
+    roles - a list of all roles in the current game
+    master - The Gamemaster; user tag
+    channel - the channel the game is being run in
+*/
+
+// Game database
+game = {
+    queued: false,
+    playing: false,
+    day: 0,
+    alive: {},
+    dead: {},
+    roles: "",
+    master: "",
+    channel: ""
+}
+
 
 // Randomizer code borrowed from:  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
 function getRandomInt(min, max) {
@@ -242,12 +297,12 @@ function assignRoles(list) {
         index = roles[Object.keys(roles)[i]]
       
         if (index.team === "town") {
-            if (index.type === "protective") townProtective.push(index.name)
+            if (index.type === "protection") townProtective.push(index.name)
             if (index.type === "support") townSupport.push(index.name)
             if (index.type === "killing") townKilling.push(index.name)
             if (index.type === "investigative") townInvestigative.push(index.name)
         }
-        if (index.team === "mafia") mafia.push(index.name)
+        if (index.team === "mafia" && index.name !== "Godfather") mafia.push(index.name)
         if (index.team === "neutral") {
             if (index.type === "benign") neutralBenign.push(index.name)
             if (index.type === "evil") neutralEvil.push(index.name)
@@ -255,25 +310,14 @@ function assignRoles(list) {
         }
     }
     
-    // Role ratios (unused method)
-    /*for (var j = 0; j < 12 - 4; j++) {
-        if (j % 4 === 0) {
-            roleList.push("Mafia")
-        } else {
-            roleList.push("Town")
-        }
-    }*/
-    
     // Loop through the given array and add a random index to roleList
     function addRandomRole(arr) {
-        for (var i = arr.length, rand; i > -1; i--) {
-            rand = getRandomInt(0, i)
-            roleList.push(arr[rand])
-            arr.splice(rand, 1)
-        }
+        var rand = getRandomInt(0, arr.length - 1)
+        roleList.push(arr[rand])
+        arr.splice(rand, 1)
     }
     
-    // Add roles (per number of players)
+    // Add roles to list (per number of players)
     if (playerList.length >= 7) {
         addRandomRole(townProtective)
         addRandomRole(townSupport)
@@ -282,6 +326,7 @@ function assignRoles(list) {
         addRandomRole(mafia)
     }
     if (playerList.length >= 8) {
+        addRandomRole(townInvestigative)
         var j = getRandomInt(0, 3)
         if (j === 0) addRandomRole(townProtective)
         else if (j === 1) addRandomRole(townSupport)
@@ -328,8 +373,12 @@ function assignRoles(list) {
         if (j === 0) addRandomRole(neutralBenign)
         else addRandomRole(neutralEvil)
     }
-    console.log(roleList)
   
+    // Log roles
+    game.roles = roleList
+    console.log(game.roles)
+  
+    // Randomly assign roles to players
     for (var i = roleList.length - 1, rand; i > -1; i--) {
         rand = getRandomInt(0, i)
         list[playerList[i]].role = roleList[rand]
@@ -340,27 +389,6 @@ function assignRoles(list) {
 
 function runActions(roleList) {
     
-}
-
-
-/*
-    Internal Game-Data Keys
-    
-    day - The in-game day
-    alive - The players who are alive; key: user tag, data: Player Object
-    dead - The players who have died; key: user tag, data: Player Object
-    master - The Gamemaster; user tag
-*/
-
-// Game database
-let game = {
-    queued: false,
-    playing: false,
-    day: 0,
-    alive: {},
-    dead: {},
-    master: "",
-    channel: ""
 }
 
 function roleExists(role) {
@@ -780,10 +808,10 @@ client.on("message", async msg => {
                 if (!role) msg.reply("you are not a Gamemaster and cannot start a game.")
                 else if (!game.queued) msg.reply("there is no game to start.")
                 else if (game.queued) {
-                    /*if (Object.keys(game.alive).length < 7) {
+                    if (Object.keys(game.alive).length < 7) {
                         return msg.reply("the game you have attempted to start is too small (min 7 players).")
                     }
-                    else*/ if (Object.keys(game.alive).length > 20) {
+                    else if (Object.keys(game.alive).length > 20) {
                         return msg.reply("the game you have attempted to start is too big (max 20 players).")
                     }
                     else {
