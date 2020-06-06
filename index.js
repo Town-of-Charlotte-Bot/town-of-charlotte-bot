@@ -6,56 +6,60 @@
   - Server must have the role "Playing Game" (currently an ID assignment)
   - Mafia members must create their own group DM chat (since bots do not have the ability to join/create them)
   
+  - If bot turns off, run 'npm install discord.js' via the terminal
+  
   
   Future Implements:
   
   - Bot will respond to normal sentences with keywords instead of commands only:  https://discordjs.guide/popular-topics/collectors.html#message-collectors
 */
 
-// Keep the bot online
+// Keep-alive
 var express = require("express")
 var app = express()
 app.get("/", (request, response) => {
-  response.sendStatus(200)
-});
+    response.sendStatus(200)
+})
 app.listen(process.env.PORT)
 
 
 // Dependencies
-const Discord = require("discord.js")
-const client = new Discord.Client()
-const TOKEN = process.env.TOKEN
-const prefix = "."
-const gameTitle = "Town of Salem"
-const playRole = "458590289477763073"
+const Discord = require("discord.js"),
+    client = new Discord.Client(),
+    TOKEN = process.env.TOKEN,
+    // Version (major change, minor update, bug-fix letter)
+    version = "Mica (0.1)",
+    prefix = ".",
+    gameTitle = "Town of Salem",
+    playRole = "458590289477763073"
 let logs = [],
 
 
 // Role Database
 /*
     Role: {
-        name: "Role",
-        txt: "This is info text."
+        name: "Role",                                                       <-- Name of the role (should be identical to the object name)
+        txt: "This is info text."                                           <-- The info text DMed to the user when they receive their role
         action: {
-            action1: [Infinity, "This alert message is sent to the target"], // Message is only sent to target if role action goes through
-            action2: [3, "This alert message is sent to the target"]
+            action1: [Infinity, "This alert message is sent to the target"], <-- Action name, number of total actions per game (Infinity if unlimited), alert message sent to target
+            action2: [3, "This alert message is sent to the target"]         <-- Message is only sent to target if role action goes through
         }
-        immune: {
+        immune: {                                                           <-- Role immunities
             kill: true,
             detect: true,
             rb: true,
             control: true
         },
-        looksLike: "Role1, Role2, Role3",
-        team: "town",
-        type: "protective",
-        canTarget: true,
-        canSleep: true
+        looksLike: "Role1, Role2, Role3",                                   <-- A text list of 3 role options (sent to investigator if this role is targeted)
+        team: "town",                                                       <-- The side this role is on (either town, mafia or neutral)
+        type: "protection",                                                 <-- The type of role (if town: protection, support, killing or investigative; if neutral: evil, killing or benign; if mafia, delete the type key)
+        canTarget: true,                                                    <-- Whether or not the role can target players (should only be false if the role does not perform a night action, e.g. Lunatic, Intimidator)
+        canSleep: true                                                      <-- Whether the role can skip their night action ("sleep")
     }
 */
 
 roles = {
-    // Necessary
+    // Necessary (guaranteed in every game)
     Jailor: {
         name: "Jailor",
         txt: "Lock up 1 person each night. Target can't perform their night action and is safe from shots. You may execute your target once.",
@@ -104,7 +108,7 @@ roles = {
         name: "Bodyguard",
         txt: "Protect someone from an attacker, killing them and also dying yourself. You may make yourself immune 1 night without guarding",
         action: {
-            heal: [Infinity, "The bodyguard protected you!"]
+            protect: [Infinity, "The bodyguard protected you!"]
         },
         immune: {},
         looksLike: "",
@@ -132,13 +136,13 @@ roles = {
         name: "Intimidator",
         txt: "Players right next to you know your role and must vote with you. They cannot reveal your role, and you survive 1 normal gunshot",
         action: {
-            rb: [Infinity, `You have been intimidated by __! You must vote with them in all town lynchings.`]
+            intimidate: [Infinity, `You have been intimidated by __! You must vote with them in all town lynchings.`]
         },
         immune: {},
         looksLike: "",
         team: "town",
         type: "support",
-        canTarget: true,
+        canTarget: false,
         canSleep: true
     },
   
@@ -175,10 +179,29 @@ roles = {
         name: "Lookout",
         txt: "Watch 1 person to see who visits them",
         action: {
-            investigate: [Infinity]
+            lookout: [Infinity]
         },
         immune: {},
         looksLike: "",
+        team: "town",
+        type: "investigative",
+        canTarget: true,
+        canSleep: true
+    },
+    Sheriff: {
+        name: "Sheriff",
+        txt: "Checks 1 person each night for suspicious activity. (Maf = Sus. Killing Neutral = Gives exact role)",
+        action: {
+            action1: [Infinity, "This alert message is sent to the target"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Sheriff, Werewolf, Psychopath",
         team: "town",
         type: "investigative",
         canTarget: true,
@@ -198,6 +221,156 @@ roles = {
         canTarget: true,
         canSleep: true
     },
+    Consigliere: {
+        name: "Consigliere",
+        txt: "Choose someone and discover their role every night (3 uses) .",
+        action: {
+            action1: [3, ""],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Consigliere, Investigator, Mayor",
+        team: "mafia",
+        canTarget: true,
+        canSleep: true
+    },
+    Hypnotist: {
+        name: "Hypnotist",
+        txt: "Hypnotize 1 person each night, preventing them from performing their role.",
+        action: {
+            action1: [Infinity, "You were role blocked!"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Teleporter, Comedian, Hypnotist",
+        team: "mafia",
+        canTarget: true,
+        canSleep: true
+    },
+    Blackmailer: {
+        name: "Blackmailer",
+        txt: "Prevent one person from speaking during the day or using discord.",
+        action: {
+            action1: [Infinity, "You have been blackmailed!"],
+            action2: [3, "This alert message is sent to the target"]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Jailor, Blackmailer, Monk",
+        team: "mafia",
+        canTarget: true,
+        canSleep: true
+    },
+    Playwright: {
+        name: "Playwright",
+        txt: "Choose someone every night, they are forced to visit you unless they are unable to visit you. They will not know their target was changed.",
+        action: {
+            action1: [Infinity, ""],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Framer, Lunatic, Vampire, Playwright",
+        team: "mafia",
+        canTarget: true,
+        canSleep: true
+    },
+      
+    // Neutral Benign
+    Amnesiac: {
+        name: "Amnesiac",
+        txt: "On the third night or later, you may take the role (remember it) of someone who is dead, you carry out their abilities.",
+        action: {
+            action1: [Infinity, ""],
+            action2: [3, "This alert message is sent to the target"]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Amnesiac, Slayer, Survivor",
+        team: "neutral",
+        type: "benign",
+        canTarget: true,
+        canSleep: true
+    },
+    "Guardian Angel": {
+        name: "Guardian Angel",
+        txt: "You may protect ur target from death 3 times, if they die you become a survivor.",
+        action: {
+            action1: [3, "You were protected by the Guardian Angel!"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Lookout, Witch, Guardian Angel",
+        team: "neutral",
+        type: "benign",
+        canTarget: true,
+        canSleep: true
+    },
+    Survivor: {
+        name: "Survivor",
+        txt: "Tries to survive the entire game, has 3 bullet proof vests which give night immunity.",
+        action: {
+            action1: [Infinity, ""],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Amnesiac, Slayer, Survivor",
+        team: "neutral",
+        type: "benign",
+        canTarget: true,
+        canSleep: true
+    },
+    "Uber Driver": {
+        name: "Uber Driver",
+        txt: "Whoever you target can use their ability twice (target two people).",
+        action: {
+            action1: [Infinity, "You were picked up in an Uber!"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Teleporter, Comedian, Hypnotist",
+        team: "neutral",
+        type: "benign",
+        canTarget: true,
+        canSleep: true
+    },
     
     // Neutral Evil
     Lunatic: {
@@ -206,6 +379,82 @@ roles = {
         action: {},
         immune: {},
         looksLike: "",
+        team: "neutral",
+        type: "evil",
+        canTarget: false,
+        canSleep: true
+    },
+    Witch: {
+        name: "Witch",
+        txt: "Chooses a target each night to control, then will choose a target for the controlled person.",
+        action: {
+            action1: [Infinity, "You were cursed!"],
+            action2: [Infinity, "You were cursed!"]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Lookout, Witch, Guardian Angel",
+        team: "neutral",
+        type: "evil",
+        canTarget: true,
+        canSleep: true
+    },
+    Necromancer: {
+        name: "Necromancer",
+        txt: "Curses someone each night, if cursed person dies, they become a zombie, they don't speak and must vote with Necromancer.",
+        action: {
+            action1: [Infinity, "You have died and become a zombie!"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Medium, Necromancer, Shaman",
+        team: "neutral",
+        type: "evil",
+        canTarget: true,
+        canSleep: true
+    },
+    Vampire: {
+        name: "Vampire",
+        txt: "Bites someone the first night, and then that person bites someone the next night and so on.",
+        action: {
+            action1: [Infinity, "You were bitten by a vampire!"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Framer, Lunatic, Vampire, Playwright",
+        team: "neutral",
+        type: "evil",
+        canTarget: true,
+        canSleep: true
+    },
+    Psychopath: {
+        name: "Psychopath",
+        txt: "Trick the town into lynching your target (Chosen the 1st night) Becomes lunatic if your target is killed other than lynched.",
+        action: {
+            action1: [Infinity, ""],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Sheriff, Werewolf, Psychopath",
         team: "neutral",
         type: "evil",
         canTarget: false,
@@ -227,7 +476,64 @@ roles = {
         type: "killing",
         canTarget: true,
         canSleep: false
-    }
+    },
+    Arsonist: {
+        name: "Arsonist",
+        txt: "Douse someone in gasoline, or ignite all currently doused targets. Ignited targets can't be healed. Targets are aware they are doused.",
+        action: {
+            action1: [Infinity, "You were doused!"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Bodyguard, Godfather, Arsonist",
+        team: "neutral",
+        type: "killing",
+        canTarget: true,
+        canSleep: true
+    },
+    Terrorist: {
+        name: "Terrorist",
+        txt: "Randomly kills someone each night, bypassing night immunity.",
+        action: {
+            action1: [Infinity, "You were exploded by a terrorist!"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Vigilante, Veteran, Terrorist",
+        team: "neutral",
+        type: "killing",
+        canTarget: true,
+        canSleep: true
+    },
+    Werewolf: {
+        name: "Werewolf",
+        txt: "Transform into a werewolf every full moon (every other night starting on the 2nd).",
+        action: {
+            action1: [Infinity, "A werewolf ripped you to shreds"],
+            action2: [3, ""]
+        },
+        immune: {
+            kill: true,
+            detect: true,
+            rb: true,
+            control: true
+        },
+        looksLike: "Sheriff, Werewolf, Psychopath",
+        team: "neutral",
+        type: "killing",
+        canTarget: true,
+        canSleep: true
+    },
 },
 townProtective = [],
 townSupport = [],
@@ -297,12 +603,16 @@ function assignRoles(list) {
         index = roles[Object.keys(roles)[i]]
       
         if (index.team === "town") {
+            if (index.type === "necessary") continue
             if (index.type === "protection") townProtective.push(index.name)
             if (index.type === "support") townSupport.push(index.name)
             if (index.type === "killing") townKilling.push(index.name)
             if (index.type === "investigative") townInvestigative.push(index.name)
         }
-        if (index.team === "mafia" && index.name !== "Godfather") mafia.push(index.name)
+        if (index.team === "mafia") {
+            if (index.name === "Godfather") continue
+            else mafia.push(index.name)
+        }
         if (index.team === "neutral") {
             if (index.type === "benign") neutralBenign.push(index.name)
             if (index.type === "evil") neutralEvil.push(index.name)
@@ -313,6 +623,7 @@ function assignRoles(list) {
     // Loop through the given array and add a random index to roleList
     function addRandomRole(arr) {
         var rand = getRandomInt(0, arr.length - 1)
+        console.log(arr + ", " + rand)
         roleList.push(arr[rand])
         arr.splice(rand, 1)
     }
@@ -326,12 +637,12 @@ function assignRoles(list) {
         addRandomRole(mafia)
     }
     if (playerList.length >= 8) {
-        addRandomRole(townInvestigative)
-        var j = getRandomInt(0, 3)
+        addRandomRole(townKilling)
+        /*var j = getRandomInt(0, 3)
         if (j === 0) addRandomRole(townProtective)
         else if (j === 1) addRandomRole(townSupport)
         else if (j === 2) addRandomRole(townKilling)
-        else if (j === 3) addRandomRole(townInvestigative)
+        else if (j === 3) addRandomRole(townInvestigative)*/
     }
     if (playerList.length >= 9) addRandomRole(mafia)
     if (playerList.length >= 10) addRandomRole(townKilling)
@@ -426,7 +737,7 @@ function removePlayer(author) {
 }
 
 client.on("ready", () => {
-    console.log("Ready for action!")
+    console.log(`Ready for action! Running version ${version}`)
 });
 
 client.on("debug", debug => {
@@ -449,16 +760,36 @@ client.on("message", async msg => {
     var listed = (getPlayer(msg.author) === undefined) ? false : true
     
     if (msg.channel.type === "dm") {
+        if (arg[0] === "game") {
+            if (arg[1] === "roles") {
+                msg.channel.send({
+                    embed: {
+                        //color: 3447003,
+                        title: `> Game Roles`,
+                        fields: [
+                            {
+                                name: "For a more detailed look at roles, see this spreadsheet:",
+                                value: "https://docs.google.com/spreadsheets/d/1qAeSs2LM--ik_Z_52Br2pM_0xXFCMiqaxqdmSitysQg/edit#gid=0"
+                            }
+                        ],
+                        footer: {
+                            text: `Not what you're looking for? In the server chat type ${prefix}help`
+                        }
+                    }
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`));
+            }
+            if (arg[1] === "role") {
+                // Give more detailed info on a specific role (the following argument)
+                msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
+            }
+            else msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\` in the game server chat.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
+        }
         if (game.playing) {
             if (arg[0] === "action") {
-                if (arg[1] === "list") {
-                    return msg.channel.send(`This is a list of actions: [...]`).catch(error => msg.reply(`Failed to perform action: ${error}`))
-                }
+                if (arg[1] === "list") return msg.channel.send(`This is a list of actions: [...]`).catch(error => msg.reply(`Failed to perform action: ${error}`))
                 
                 // Sleep (do not perform an action)
-                else if (arg[1] === "sleep") {
-                    return msg.channel.send(`You have slept.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
-                }
+                else if (arg[1] === "sleep") return msg.channel.send(`You have slept.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
                 
                 // Roles that only self-target
                 else if (arg[1] === "alert") {
@@ -529,29 +860,25 @@ client.on("message", async msg => {
                 else if (arg[1] === "teleport") {
                     // Teleporter
                 }
-                else {
-                    msg.channel.send(`You must specify an action to perform.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
-                }
+                else msg.channel.send(`You must specify an action to perform.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
               
-                // Roles that do not require player-provided targets:  Terrorist, Mafioso
+                // Roles that do not require player-provided targets:  Terrorist, Mafioso (not added)
               
-                // Check for these wins during the day (after a lynching):  Town, Mafia, Lunatic, Psychopath
+                // Check for these wins during the day (after a lynching):  Town, Mafia, Lunatic, Psychopath, Necromancer, Witch, Vampire, SK, Arsonist, Terrorist, Werewolf
               
                 // Check if all players have done their actions; if so, run the nightly actions and end the night
                 // When players die (nightly or lynching), bot reveals their role in chat
             }
-            else {
-                msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\` in the game server chat.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
-            }
-        } else {
-            msg.channel.send(`Sorry, this command can only be used during a game.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
+            else msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\` in the game server chat.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
         }
+        else msg.channel.send(`Sorry, this command can only be used during a game.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
     }
     else {
         // Check for Discord roles
         let role = msg.member.roles.cache.some(r => ["Gamemaster"].includes(r.name)),
             playingRole = msg.guild.roles.fetch(playRole)
-        // console.log(msg.guild.roles.find("name", "Playing Game"))
+        // const guild = client.guilds.get("The_server_id");
+        // const role = guild.roles.find("name", "Your_role_name");
 
         // For DMing a user by ID
         function dmID(id, dm) {
@@ -561,56 +888,111 @@ client.on("message", async msg => {
         // Set the main channel (so the bot can message there of its own accord)
         if (game.channel === "") game.channel = msg.channel.id
       
+        // Message main game channel
         function msgChannel(msg) {
             client.channels.fetch(game.channel).then(user => {user.send(msg)})
         }
         
         if (arg[0] === "help") {
-            msg.channel.send({
-                embed: {
-                    //color: 3447003,
-                    title: "> Help",
-                    fields: [
-                        {
-                            name: `I'm _The Assistant_, here to help run your _${gameTitle}_ games!`,
-                            value: "Here's a list of my commands:"
-                        },
-                        {
-                            name: "General",
-                            value: `\`help\` - Displays the help screen, with the list of all commands
-                                    \`ping\` - Ping the bot, and receive a latency check
-                                    \`info\` - Gives info about the _${gameTitle}_ game and how to play
-                                    \`tip\` - Get a random gameplay tip`
+            if (role) {
+                msg.channel.send({
+                    embed: {
+                        //color: 3447003,
+                        title: "> Help",
+                        fields: [
+                            {
+                                name: `I'm _The Assistant_, here to help run your _${gameTitle}_ games!`,
+                                value: `The command prefix is \`${prefix}\` Commands in italics are for Gamemasters only.
+                                        **Here's a list of commands:**`
+                            },
+                            {
+                                name: "General",
+                                value: `\`help\` -- Displays the help screen, with the list of all commands
+                                        \`ping\` -- Ping the bot, and receive a latency check
+                                        \`info\` -- Gives info about the _${gameTitle}_ game and how to play
+                                        ~~\`tip\` -- Get a random gameplay tip~~
+                                        ~~_\`settings\` -- Bot and game settings_~~
+                                        \`version\` -- Current bot version and changelog synopsis`
 
-                        },
-                        {
-                            name: "Game",
-                            value: "`game join` - Join the started game\n"
-                                + "`game leave` - Leave the current game\n"
-                                + "`game stats` - Show vital statistics about the current game\n"
-                                + "`game players` - Lists all players in the current game\n"
-                                + "`roles list` - Lists all roles\n"
-                                + "`roles x` - Provides specific info on a role, where _x_ is the role name"
-                        },
-                        {
-                            name: "Gamemaster",
-                            value: "`delete x` - Bulk-delete messages, where _x_ is the number of messages to delete\n"
-                                + "`game start` - Start a new game for players to join\n"
-                                + "`game begin` - Begin the game with the players that have joined\n"
-                                + "`game night` - End the current day and begin the night\n"
-                                + "`game end` - End the current game\n"
-                                + "`roles players` - DMs the user a list of all players in the current game and their respective roles"
-                        },
-                        /*{
-                            name: "Dev Tools",
-                            value: "`print x` - Print the output of the proceeding code, where _x_ is the code to run"
-                        }*/
-                    ],
-                    footer: {
-                        text: `Command Prefix: ${prefix}`
+                            },
+                            {
+                                name: "Game",
+                                value: `_\`game queue\` -- Queues a new ${gameTitle} game for players to join_
+                                        \`game join\` -- Join the queued game
+                                        \`game leave\` -- Leave the current game
+                                        _\`game start\` -- Starts the queued game_
+                                        _\`game end\` -- Ends the current game_
+                                        \`game players\` -- Lists all players in the current game
+                                        ~~\`game stats\` -- Shows vital statistics about the current game~~`
+
+                            },
+                            {
+                                name: "Via DM",
+                                value: `\`action \_\_\ \_\_\` -- Perform your nightly action by specifying the action type (your action name will be sent to you at the start of the game) followed by the name of your target
+                                        \`game roles\` -- Lists all roles
+                                        ~~\`game role \_\_\` -- Get detailed info on a specific role~~`
+
+                            },
+                            {
+                                name: "Gamemaster",
+                                value: `_\`lynch \_\_\` -- Puts the specified player on the lynching block to be voted on_
+                                        _\`night start\` -- Ends the current day and starts the next night_`
+
+                            },
+                            {
+                                name: "Dev / Utility",
+                                value: `_\`admin restart\` -- Restarts the bot_
+                                        ~~_\`admin delete \_\_\` -- Bulk-deletes the specified number of messages_~~
+                                        ~~_\`admin print \_\_\` -- Runs the specified input and prints the output in a following message_~~
+                                        ~~_\`admin run \_\_\` -- Runs the specified input as native code_~~
+                                        _\`admin create-players \_\_\` -- Creates the specified number of players and adds them into the game. Players are unique entities, but point to the creator's account_`
+                            }
+                        ],
+                        footer: {
+                            text: `Command Prefix: ${prefix}`
+                        }
                     }
-                }
-            }).catch(error => msg.reply(`Failed to perform action: ${error}`));
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+            }
+            else {
+                msg.channel.send({
+                    embed: {
+                        //color: 3447003,
+                        title: "> Help",
+                        fields: [
+                            {
+                                name: `I'm _The Assistant_, here to help run your _${gameTitle}_ games!`,
+                                value: `The command prefix is \`${prefix}\`
+                                        **Here's a list of commands:**`
+                            },
+                            {
+                                name: "General",
+                                value: `\`help\` -- Displays the help screen, with the list of all commands
+                                        \`ping\` -- Ping the bot, and receive a latency check
+                                        \`info\` -- Gives info about the _${gameTitle}_ game and how to play
+                                        \`version\` -- Current bot version and changelog synopsis`
+
+                            },
+                            {
+                                name: "Game",
+                                value: `\`game join\` -- Join the queued game
+                                        \`game leave\` -- Leave the current game
+                                        \`game players\` -- Lists all players in the current game`
+
+                            },
+                            {
+                                name: "Via DM",
+                                value: `\`action \_\_\ \_\_\` -- Perform your nightly action by specifying the action type (your action name will be sent to you at the start of the game) followed by the name of your target
+                                        \`game roles\` -- Lists all roles`
+
+                            }
+                        ],
+                        footer: {
+                            text: `Command Prefix: ${prefix}`
+                        }
+                    }
+                }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+            }
         }
         else if (arg[0] === "ping") {
             const temp = await msg.channel.send("Pinging...").catch(error => msg.reply(`Failed to perform action: ${error}`))
@@ -668,6 +1050,24 @@ client.on("message", async msg => {
         }
         else if (arg[0] === "settings") {
             msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`));
+        }
+        else if (arg[0] === "version") {
+            msg.channel.send({
+                embed: {
+                    //color: 3447003,
+                    title: `> Bot Version`,
+                    fields: [
+                        {
+                            name: `Currently running version ${version}`,
+                            value: `+ These are the new features
+                                    - These are the bug fixes/removed features`
+                        }
+                    ],
+                    footer: {
+                        text: `Not what you're looking for? ${prefix}help`
+                    }
+                }
+            }).catch(error => msg.reply(`Failed to perform action: ${error}`));
         }
         else if (arg[0] === "tip") {
             msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`));
@@ -817,6 +1217,7 @@ client.on("message", async msg => {
                     else {
                         game.queued = false
                         game.playing = true
+                        game.day++
 
                         assignRoles(game.alive)
 
@@ -824,7 +1225,7 @@ client.on("message", async msg => {
                             dmID(game.alive[Object.keys(game.alive)[i]].id, {
                                 embed: {
                                     //color: 3447003,
-                                    title: `> Night 1 has started.`,
+                                    title: `> Night ${game.day} has started.`,
                                     fields: [
                                         {
                                             name: `Your role is _${game.alive[Object.keys(game.alive)[i]].role}_.`,
@@ -890,13 +1291,9 @@ client.on("message", async msg => {
             else if (arg[1] === "stats") {
                 msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
             }
-            else {
-                msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\`.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
-            }
+            else msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\`.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
         }
-        else if (arg[0] === "action") {
-            msg.channel.send(`Sorry, this command can only be used in a DM with me.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
-        }
+        else if (arg[0] === "action") msg.channel.send(`Sorry, this command can only be used via DM with me.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
         
         // Gamemaster commands
         else if (arg[0] === "lynch") {
@@ -914,52 +1311,78 @@ client.on("message", async msg => {
         }
         else if (arg[0] === "night") {
             if (arg[1] === "start") {
-                // Gamemaster will start the next night via this command
-            }
-        }
-
-        // Utility commands
-        else if (arg[0] === "restart") {
-            if (role) {
-                var restarting = false
-              
-                msg.react('👍').then(() => msg.react('👎'))
-
-                const filter = (reaction, user) => {
-                    return ['👍', '👎'].includes(reaction.emoji.name) && user.id === msg.author.id
+                if (!role) return msg.reply("you are not a Gamemaster and cannot start the next night.")
+                else {
+                    // Should only advance night if Jailor and Uber have already sent in their targets
+                    game.day++
                 }
-                
-                msg.awaitReactions(filter, { max: 1, time: 60000, errors: ['time'] })
-                .then(collected => {
-                    const reaction = collected.first()
-
-                    if (reaction.emoji.name === '👍' && !restarting) {
-                        restarting = true
-                        msg.channel.send("Restarting...").catch(error => msg.reply(`Failed to perform action: ${error}`)).then(() => {client.destroy()}).then(() => {client.login(TOKEN)}).then(() => {msg.channel.send("All done!")})
-                    } else {
-                        msg.reply('restart cancelled.')
-                    }
-                })
-                .catch(collected => {
-                    msg.reply('restart cancelled.')
-                })
             }
-            else msg.reply("you are not a Gamemaster and cannot restart me.")
         }
-        else if (arg[0] === "delete") {
-            msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
+
+        // Dev/utility commands
+        else if (arg[0] === "admin") {
+            if (!role) return msg.reply("you are not a Gamemaster and cannot access the `admin` command.")
+            if (arg[1] === "restart") {
+                if (role) {
+                    var restarting = false
+
+                    msg.react('👍').then(() => msg.react('👎'))
+
+                    const filter = (reaction, user) => {
+                        return ['👍', '👎'].includes(reaction.emoji.name) && user.id === msg.author.id
+                    }
+
+                    msg.awaitReactions(filter, { max: 1, time: 60000, errors: ['time'] })
+                    .then(collected => {
+                        const reaction = collected.first()
+
+                        if (reaction.emoji.name === '👍' && !restarting) {
+                            restarting = true
+                            msg.channel.send("Restarting...").catch(error => msg.reply(`Failed to perform action: ${error}`)).then(() => {client.destroy()}).then(() => {client.login(TOKEN)}).then(() => {msg.channel.send("All done!")})
+                        } else {
+                            msg.reply('restart cancelled.')
+                        }
+                    })
+                    .catch(collected => {
+                        msg.reply('restart cancelled.')
+                    })
+                }
+                else msg.reply("you are not a Gamemaster and cannot restart me.")
+            }
+            else if (arg[1] === "delete") {
+                msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
+            }
+            else if (arg[1] === "print") {
+                msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
+                // var content = eval(msg.content.substr(prefix.length + 6))
+                // return msg.channel.send((content == "") ? "_[ Empty Message ]_" : content)
+                // return Function('"use strict";return (' + msg.content.substr(prefix.length + 6) + ')')();
+            }
+            else if (arg[1] === "run") {
+                msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
+                /*if (!role) msg.reply("you are not a Gamemaster and cannot run test commands.")
+                else {
+                    var content = eval(msg.content.substr(prefix.length + 6))
+                    return msg.channel.send((content == "") ? "_[ Empty Message ]_" : content)
+                }*/
+            }
+            else if (arg[1] === "create-players") {
+                if (!role) return msg.reply("you are not a Gamemaster and cannot create players.")
+                if (!game.queued) return msg.reply("players cannot be created. Either a game has not been queued, or one has already started.")
+                if (arg[2] === undefined) return msg.reply("you must provide the number of players to create.")
+                else {
+                    var i = 0
+                    for (; i < arg[2]; i++) {
+                        if (Object.keys(game.alive).length >= 20) break
+                        game.alive["Player_" + (Object.keys(game.alive).length)] = new Player(msg.author);
+                    }
+                    msg.channel.send(`Added ${i} players to the game.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                }
+            }
+            else msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\`.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
         }
-        else if (arg[0] === "print") {
-            msg.channel.send("Sorry, this feature has not been implemented yet.").catch(error => msg.reply(`Failed to perform action: ${error}`))
-            /*if (!role) msg.reply("you are not a Gamemaster and cannot run test commands.")
-            else {
-                var content = eval(msg.content.substr(prefix.length + 6))
-                return msg.channel.send((content == "") ? "_[ Empty Message ]_" : content)
-            }*/
-        }
-        else {
-            msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\`.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
-        }
+      
+        else msg.channel.send(`Sorry, I don't understand that command; check that you spelled it correctly. If you need help, type \`${prefix}help\`.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
     }
 })
 
