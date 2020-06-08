@@ -27,8 +27,8 @@ app.listen(process.env.PORT)
 const Discord = require("discord.js"),
     client = new Discord.Client(),
     TOKEN = process.env.TOKEN,
-    // Version (major change, minor update, bug-fix letter)
-    version = "Mica (0.1)",
+    // Version name (major change, minor update, bug-fix letter)
+    version = "Mica (0.1 Alpha)",
     prefix = ".",
     gameTitle = "Town of Salem",
     playRole = "458590289477763073"
@@ -38,23 +38,28 @@ let logs = [],
 // Role Database
 /*
     Role: {
-        name: "Role",                                                       <-- Name of the role (should be identical to the object name)
-        txt: "This is info text."                                           <-- The info text DMed to the user when they receive their role
+        name: "Role",                                      <-- Name of the role (should be identical to the object name)
+        txt: "This is info text."                          <-- The info text DMed to the user when they receive their role
         action: {
-            action1: [Infinity, "This alert message is sent to the target"], <-- Action name, number of total actions per game (Infinity if unlimited), alert message sent to target
-            action2: [3, "This alert message is sent to the target"]         <-- Message is only sent to target if role action goes through
+            action1: [Infinity, "Message sent to target"], <-- Action name, number of total actions per game (Infinity if unlimited), alert message sent to target
+            action2: [3, "Message sent to target"]         <-- Message is only sent to target if role action goes through
         }
-        immune: {                                                           <-- Role immunities
+        immune: {                                          <-- Role immunities
             kill: true,
             detect: true,
             rb: true,
             control: true
         },
-        looksLike: "Role1, Role2, Role3",                                   <-- A text list of 3 role options (sent to investigator if this role is targeted)
-        team: "town",                                                       <-- The side this role is on (either town, mafia or neutral)
-        type: "protection",                                                 <-- The type of role (if town: protection, support, killing or investigative; if neutral: evil, killing or benign; if mafia, delete the type key)
-        canTarget: true,                                                    <-- Whether or not the role can target players (should only be false if the role does not perform a night action, e.g. Lunatic, Intimidator)
-        canSleep: true                                                      <-- Whether the role can skip their night action ("sleep")
+        infected: {
+            werewolf: false,
+            vampire: false,
+            veteran: false
+        },
+        looksLike: "Role1, Role2, Role3",                  <-- A text list of 3 role options (sent to investigator if this role is targeted)
+        team: "town",                                      <-- The side this role is on (either town, mafia or neutral)
+        type: "protection",                                <-- The type of role (if town: protection, support, killing or investigative; if neutral: evil, killing or benign; if mafia, delete the type key)
+        canTarget: true,                                   <-- Whether or not the role can target players (should only be false if the role does not perform a night action, e.g. Lunatic, Intimidator)
+        canSleep: true                                     <-- Whether the role can skip their night action ("sleep")
     }
 */
 
@@ -68,6 +73,7 @@ roles = {
             kill: [1, "You were executed by the Jailor!"]
         },
         immune: {},
+        infected: {},
         looksLike: "",
         team: "town",
         type: "necessary",
@@ -560,6 +566,7 @@ neutralKilling = [],
 game = {
     queued: false,
     playing: false,
+    tutorial: false,
     day: 0,
     alive: {},
     dead: {},
@@ -622,10 +629,17 @@ function assignRoles(list) {
     
     // Loop through the given array and add a random index to roleList
     function addRandomRole(arr) {
-        var rand = getRandomInt(0, arr.length - 1)
-        console.log(arr + ", " + rand)
-        roleList.push(arr[rand])
-        arr.splice(rand, 1)
+        // If trying to pull a role from an empty array. Currently set to doctor since I believe the only way this is possible is with a town array
+        if (arr.length === 0) {
+            console.log("[ Empty array ], Doctor")
+            roleList.push('Doctor')
+        }
+        else {
+            var rand = getRandomInt(0, arr.length - 1)
+            console.log(arr + ", " + rand)
+            roleList.push(arr[rand])
+            arr.splice(rand, 1)
+        }
     }
     
     // Add roles to list (per number of players)
@@ -637,12 +651,11 @@ function assignRoles(list) {
         addRandomRole(mafia)
     }
     if (playerList.length >= 8) {
-        addRandomRole(townKilling)
-        /*var j = getRandomInt(0, 3)
+        var j = getRandomInt(0, 3)
         if (j === 0) addRandomRole(townProtective)
         else if (j === 1) addRandomRole(townSupport)
         else if (j === 2) addRandomRole(townKilling)
-        else if (j === 3) addRandomRole(townInvestigative)*/
+        else if (j === 3) addRandomRole(townInvestigative)
     }
     if (playerList.length >= 9) addRandomRole(mafia)
     if (playerList.length >= 10) addRandomRole(townKilling)
@@ -746,7 +759,8 @@ client.on("debug", debug => {
 
 client.on("message", async msg => {
     // Update bot status
-    if (game.playing) client.user.setActivity(gameTitle)
+    if (game.tutorial) client.user.setActivity("a tutorial")
+    else if (game.playing && !game.tutorial) client.user.setActivity(gameTitle)
     else client.user.setActivity(`${prefix}help`)
   
     if (msg.author.bot) return
@@ -998,6 +1012,72 @@ client.on("message", async msg => {
             const temp = await msg.channel.send("Pinging...").catch(error => msg.reply(`Failed to perform action: ${error}`))
             temp.edit(`Pong! Latency is ${temp.createdTimestamp - msg.createdTimestamp}ms.`)
         }
+        else if (arg[0] === "tutorial") {
+            if (!role) return msg.reply("you are not a Gamemaster and cannot start a tutorial.")
+            
+            // End the tutorial midway
+            if (arg[1] === "cancel" || arg[1] === "end") {
+                if (!game.tutorial) return msg.reply("there is no tutorial to end.")
+                else {
+                    game.queued = false
+                    game.playing = false
+                    game.tutorial = false
+                  
+                    // Remove the Playing Game role
+                    msg.guild.members.fetch(game.alive[Object.keys(game.alive)[0]].id).then(user => {user.roles.remove(playRole)}).catch(error => msg.reply(`Failed to perform action: ${error}`))
+
+                    // Reset the game object
+                    game = {
+                        day: 0,
+                        alive: {},
+                        dead: {},
+                        players: {},
+                        master: ""
+                    }
+                  
+                    return msg.channel.send("The current tutorial has been cancelled.")
+                }
+            }
+            
+            // Tutorial pages: (1) queue game, (2) start game, (3) send target, (4) advance night, (5) lynch player, (6) end game, (7) finish
+            game.tutorial = true
+            msg.author.send({
+                embed: {
+                    //color: 3447003,
+                    title: "> Bot Tutorial (1/7)",
+                    fields: [
+                        {
+                            name: `This tutorial will guide you through setting up a new _${gameTitle}_ game.`,
+                            value: `Hey ${msg.author.username}! Let's walk you through setting up a new _${gameTitle}_ game.`
+                        },
+                        {
+                            name: `\`${prefix}game queue\``,
+                            value: `This is the first command you will need to run. It will create a new game for players to join, via the \`${prefix}game join\` command. As each player joins, they will be assigned the Playing Game role, so you can keep track. Go ahead and create a new game by typing \`${prefix}game queue\` in the server chat.`
+                        }
+                        // Other tutorial prompts that need to be added
+                        /*{
+                            name: `\`${prefix}night start\``,
+                            value: `Once players are finished talking during the day, run this command to start the next night.`
+                        }
+                        {
+                            name: `\`${prefix}vote\` / \`${prefix}lynch\``,
+                            value: `You can run the \`${prefix}vote\` command to put a player on the lynching block to be voted on by other players, or you can run \`${prefix}lynch\` to directly lynch the player (as in a group setting, where players may be voting outside of Discord). Try running \`${prefix}lynch\` in the server chat.`
+                        }
+                        {
+                            name: `\`${prefix}game end\``,
+                            value: `A game will go until one of the teams wins, but what if you need to quit a game midway through? Quit the current game with \`${prefix}game end\``
+                        }
+                        {
+                            name: `And that's all!`,
+                            value: `You now know the commands for setting up and running a ${gameTitle} game.`
+                        }*/
+                    ],
+                    footer: {
+                        text: `For info on other bot actions, check the \`${prefix}help\` list`
+                    }
+                }
+            }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+        }
         else if (arg[0] === "info") {
             msg.channel.send({
                 embed: {
@@ -1077,6 +1157,7 @@ client.on("message", async msg => {
         else if (arg[0] === "game") {
             if (arg[1] === "join") {
                 if (!game.queued) return msg.reply("there is no game to join. Either a game has not been queued, or one has already started.")
+                if (game.tutorial) return msg.reply("the current game is a tutorial game and cannot be joined by other players.")
                 if (game.queued && !listed) {
                     if (role && msg.author.tag === game.master) return msg.reply("you are the Gamemaster for the current game.")
 
@@ -1161,7 +1242,7 @@ client.on("message", async msg => {
                     }).catch(error => msg.reply(`Failed to perform action: ${error}`));
                 }
             }
-            else if (arg[1] === "queue") {
+            else if (arg[1] === "queue" || arg[1] === "create") {
                 if (!role) msg.reply("you are not a Gamemaster and cannot queue a game.");
                 else if (game.queued || game.playing) msg.reply("a game has already been queued.");
                 else if (!game.queued && !game.playing) {
@@ -1187,21 +1268,69 @@ client.on("message", async msg => {
                             }
                         }
                     }).catch(error => msg.reply(`Failed to perform action: ${error}`))
-                    msg.channel.send({
-                        embed: {
-                            //color: 3447003,
-                            title: "> Game Queued",
-                            fields: [
-                                {
-                                    name: `A new _${gameTitle}_ game has been queued.`,
-                                    value: `To join, type \`${prefix}game join\`. The Gamemaster will start the game shortly.`
+                    
+                    if (game.tutorial) {
+                        msg.channel.send({
+                            embed: {
+                                //color: 3447003,
+                                title: "> Game Queued (Tutorial)",
+                                fields: [
+                                    {
+                                        name: `A new _${gameTitle}_ tutorial game has been queued.`,
+                                        value: `This is when other players can join the game, via \`${prefix}game join\`.`
+                                    }
+                                ],
+                                footer: {
+                                    text: `Need help? ${prefix}help`
                                 }
-                            ],
-                            footer: {
-                                text: `Need help? ${prefix}help`
                             }
+                        }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                      
+                        // Add test players
+                        for (var i = 0; i < 6; i++) {
+                            if (Object.keys(game.alive).length >= 20) break
+                            game.alive["Player_" + (Object.keys(game.alive).length)] = new Player(msg.author);
                         }
-                    }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                        msg.channel.send(`Added 6 test players to the tutorial game.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                        
+                        // Continue tutorial
+                        msg.author.send({
+                            embed: {
+                                //color: 3447003,
+                                title: "> Bot Tutorial (2/7)",
+                                fields: [
+                                    {
+                                        name: `This tutorial will guide you through setting up a new _${gameTitle}_ game.`,
+                                        value: `Great job, you've created a new game! As you can see in the server chat, this is when players will start joining the game (6 other test players have been added to the current game for this tutorial).`
+                                    },
+                                    {
+                                        name: `\`${prefix}game start\``,
+                                        value: `Once all the players have joined, run this command to start the game. Since this is a tutorial and the test players have already joined, go ahead and start the game!`
+                                    }
+                                ],
+                                footer: {
+                                    text: `For info on other bot actions, check the \`${prefix}help\` list`
+                                }
+                            }
+                        }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                    }
+                    else {
+                        msg.channel.send({
+                            embed: {
+                                //color: 3447003,
+                                title: "> Game Queued",
+                                fields: [
+                                    {
+                                        name: `A new _${gameTitle}_ game has been queued.`,
+                                        value: `To join, type \`${prefix}game join\`. The Gamemaster will start the game shortly.`
+                                    }
+                                ],
+                                footer: {
+                                    text: `Need help? ${prefix}help`
+                                }
+                            }
+                        }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                    }
                 }
             }
             else if (arg[1] === "start") {
@@ -1220,16 +1349,16 @@ client.on("message", async msg => {
                         game.day++
 
                         assignRoles(game.alive)
-
-                        for (var i = 0; i < Object.keys(game.alive).length; i++) {
-                            dmID(game.alive[Object.keys(game.alive)[i]].id, {
+                      
+                        if (game.tutorial) {
+                            dmID(game.alive[Object.keys(game.alive)[0]].id, {
                                 embed: {
                                     //color: 3447003,
                                     title: `> Night ${game.day} has started.`,
                                     fields: [
                                         {
-                                            name: `Your role is _${game.alive[Object.keys(game.alive)[i]].role}_.`,
-                                            value: roles[game.alive[Object.keys(game.alive)[i]].role].txt
+                                            name: `Your role is _${game.alive[Object.keys(game.alive)[0]].role}_.`,
+                                            value: roles[game.alive[Object.keys(game.alive)[0]].role].txt
                                         }
                                     ],
                                     footer: {
@@ -1237,6 +1366,46 @@ client.on("message", async msg => {
                                     }
                                 }
                             })
+                            
+                            // Continue tutorial
+                            msg.author.send({
+                                embed: {
+                                    //color: 3447003,
+                                    title: "> Bot Tutorial (3/7)",
+                                    fields: [
+                                        {
+                                            name: `This tutorial will guide you through setting up a new _${gameTitle}_ game.`,
+                                            value: `There ya go, you've started the game! As you can tell by the following DM, players have now been given their roles and the first night has started.`
+                                        },
+                                        {
+                                            name: `\`${prefix}action\``,
+                                            value: `Players can start DMing me their targets via this command. When a player is sent their role, they will also be given the name of their action (e.g. Investigator = investigate, Godfather = kill, etc). Players need to specify this action type, followed by the player they want to target, like \`${prefix}action investigate ${msg.author.username}\` Now try sending me a target...`
+                                        }
+                                    ],
+                                    footer: {
+                                        text: `For info on other bot actions, check the \`${prefix}help\` list`
+                                    }
+                                }
+                            }).catch(error => msg.reply(`Failed to perform action: ${error}`))
+                        }
+                        else {
+                            for (var i = 0; i < Object.keys(game.alive).length; i++) {
+                                dmID(game.alive[Object.keys(game.alive)[i]].id, {
+                                    embed: {
+                                        //color: 3447003,
+                                        title: `> Night ${game.day} has started.`,
+                                        fields: [
+                                            {
+                                                name: `Your role is _${game.alive[Object.keys(game.alive)[i]].role}_.`,
+                                                value: roles[game.alive[Object.keys(game.alive)[i]].role].txt
+                                            }
+                                        ],
+                                        footer: {
+                                            text: `Need help? In the server chat type ${prefix}help`
+                                        }
+                                    }
+                                })
+                            }
                         }
 
                         msg.channel.send({
@@ -1285,7 +1454,7 @@ client.on("message", async msg => {
                                 text: `Need help? ${prefix}help`
                             }
                         }
-                    }).catch(error => msg.reply(`Failed to perform action: ${error}`));
+                    }).catch(error => msg.reply(`Failed to perform action: ${error}`))
                 }
             }
             else if (arg[1] === "stats") {
@@ -1296,7 +1465,7 @@ client.on("message", async msg => {
         else if (arg[0] === "action") msg.channel.send(`Sorry, this command can only be used via DM with me.`).catch(error => msg.reply(`Failed to perform action: ${error}`))
         
         // Gamemaster commands
-        else if (arg[0] === "lynch") {
+        else if (arg[0] === "vote") {
             // Only the Gamemaster can initiate; will only run if target to lynch is provided; will run lynch if majority votes on one side; will only tally votes from users who are listed (in game.alive); timeout will cancel lynch; will have the option to vote between 2 players to put on the lynching block
             
             const filter = (reaction, user) => {
@@ -1308,6 +1477,9 @@ client.on("message", async msg => {
             collector.on('collect', (reaction, user) => {
                 console.log(`Collected ${reaction.emoji.name} from ${user.tag}`)
             })
+        }
+        else if (arg[0] === "lynch") {
+            // Will kill specified player, can only be accessed by Gamemaster
         }
         else if (arg[0] === "night") {
             if (arg[1] === "start") {
