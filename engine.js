@@ -286,6 +286,16 @@ async function resolveNight(game, dmUser) {
             });
         }
 
+        if (act.action === 'execute' && actor.role === 'Jailor') {
+            pendingKills.push({
+                killerTag: 'jailor_execute',
+                targetTag: act.target,
+                cause: 'executed by the Jailor',
+                bypassHeal: true,
+                bypassImmunity: true,
+            });
+        }
+
         if (act.action === 'kill' && actor.role === 'Serial Killer') {
             pendingKills.push({
                 killerTag: actorTag,
@@ -368,8 +378,56 @@ async function resolveNight(game, dmUser) {
         }
     }
 
-    // ── Resolve each pending kill ──────────────────────────────────────────
+    // ── Check for targeting stalemates (e.g. SK and GF/Mafia targeting each other) ──
+    const stalemateTags = new Set();
+    const allAliveTags = Object.keys(game.alive);
+    for (const tagA of allAliveTags) {
+        for (const tagB of allAliveTags) {
+            if (tagA === tagB) continue;
+
+            const actA = game.nightActions[tagA];
+            const isKillA = actA && ['kill', 'shoot', 'execute', 'rampage', 'explode'].includes(actA.action);
+            const targetsB = actA && (actA.target === tagB || (roles[game.alive[tagA]?.role]?.team === 'mafia' && game.mafiosoKill === tagB));
+
+            const actB = game.nightActions[tagB];
+            const isKillB = actB && ['kill', 'shoot', 'execute', 'rampage', 'explode'].includes(actB.action);
+            const targetsA = actB && (actB.target === tagA || (roles[game.alive[tagB]?.role]?.team === 'mafia' && game.mafiosoKill === tagA));
+
+            if (isKillA && targetsB && isKillB && targetsA) {
+                stalemateTags.add(tagA);
+                stalemateTags.add(tagB);
+            }
+        }
+    }
+
+    const filteredPendingKills = [];
     for (const kill of pendingKills) {
+        let isStalemate = false;
+
+        // Direct match
+        if (stalemateTags.has(kill.killerTag) && stalemateTags.has(kill.targetTag)) {
+            isStalemate = true;
+        }
+        // Mafia match (GF/Mafioso vs target)
+        const killerRole = game.alive[kill.killerTag]?.role;
+        if (roles[killerRole]?.team === 'mafia') {
+            const stalematedWithMafia = Object.keys(game.alive).some(t =>
+                roles[game.alive[t]?.role]?.team === 'mafia' &&
+                stalemateTags.has(t) &&
+                stalemateTags.has(kill.targetTag)
+            );
+            if (stalematedWithMafia) {
+                isStalemate = true;
+            }
+        }
+
+        if (!isStalemate) {
+            filteredPendingKills.push(kill);
+        }
+    }
+
+    // ── Resolve each pending kill ──────────────────────────────────────────
+    for (const kill of filteredPendingKills) {
         const target = game.alive[kill.targetTag];
         if (!target) continue;
 
@@ -451,12 +509,20 @@ async function resolveNight(game, dmUser) {
 
     // ── Apply deaths ───────────────────────────────────────────────────────
     game.nightlyDead = [];
+    game.deathHistory = game.deathHistory || [];
     for (const [tag, cause] of Object.entries(toKill)) {
         const dead = game.alive[tag];
         if (!dead) continue;
         game.dead[tag] = { ...dead, causeOfDeath: cause };
         delete game.alive[tag];
         game.nightlyDead.push(tag);
+
+        game.deathHistory.push({
+            night: game.day,
+            playerName: dead.displayName,
+            role: dead.role,
+            cause: cause
+        });
 
         if (cleaned.has(tag)) {
             results.push(`💀 **${dead.displayName}** was found dead last night. *(Their role is unknown.)*`);

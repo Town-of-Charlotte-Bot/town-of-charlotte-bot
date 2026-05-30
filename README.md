@@ -123,9 +123,13 @@ Additionally, the bot must have permissions to:
 
 | Command | Allowed Users | Description |
 | :--- | :--- | :--- |
-| `.help` | All | Lists all general, game, and DM commands. |
+| `.help` | All | Responds via private DM with all general, game, and DM commands. |
+| `.help roles list` | All | Responds via private DM with a list of all game roles. |
+| `.help roles <role>` | All | Responds via private DM with a short summary of how the role works. |
 | `.info` | All | Provides rules of the Town of Charlotte game. |
 | `.roles` | All | Lists all roles. Use `.roles <name>` to see specific details. |
+| `.settings` | All | Views the current bot and gameplay settings (only when no game is active). |
+| `.settings public-results <on/off>` | All | Changes whether night results are posted in the channel or DMed secretly to the GM. |
 | `.game queue` | Gamemaster | Creates a new game lobby and registers the GM. |
 | `.game join` | All | Joins the current queued lobby. |
 | `.game leave` | All | Leaves the lobby (or abandons the game if already started). |
@@ -150,5 +154,8 @@ Players send commands to the bot's DMs during the Night Phase:
 | :--- | :--- |
 | `.action <ability> <target>` | Perform your role's ability on a specified player (e.g. `.action heal Alice`). |
 | `.action sleep` | Skip your action for tonight (only works if your role has `canSleep: true`). |
+| `.help` | Sends the general command help menu. |
+| `.help roles list` | Shows a list of all game roles. |
+| `.help roles <role>` | Gets details, immunities, and abilities of a specific role. |
 | `.game roles` | Shows a list of all game roles. |
 | `.game role <name>` | Gets details, immunities, and abilities of a specific role. |

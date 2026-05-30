@@ -317,6 +317,20 @@ const roles = {
         team:         'neutral',
         type:         'evil',
     },
+    Psychopath: {
+        txt: 'Trick the town into lynching your target. You win with whichever team wins if they are lynched.',
+        priority: null,
+        abilities: {},
+        immunity:     { mafia: true, bite: false, detect: false, roleBlock: false },
+        wins:         'neutral',
+        canTargetSelf: false,
+        canSleep:     true,
+        canTarget:    false,
+        actsPerNight: 0,
+        looksLike:    'Sheriff, Werewolf, Psychopath',
+        team:         'neutral',
+        type:         'evil',
+    },
 
     // ── Neutral Killing ────────────────────────────────────────────────────
     'Serial Killer': {

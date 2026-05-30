@@ -1,4 +1,6 @@
+const path = require('path');
 require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const {
     Client, GatewayIntentBits, EmbedBuilder,
     ChannelType, PermissionFlagsBits,
@@ -43,6 +45,7 @@ function freshGame() {
         master: '',
         guildId: '',
         channelId: '',
+        deathHistory: [],
         // Lynch phase state
         lynch: null,
         lynchedToday: false,  // prevents multiple lynches per day
@@ -57,10 +60,14 @@ function freshGame() {
         // }
     };
 }
-let game = freshGame();
+let games = {};
+
+let config = {
+    publicNightResults: false
+};
 
 function Player(user) {
-    this.tag         = user.tag;
+    this.tag         = user.id;
     this.displayName = user.username;
     this.id          = user.id;
     this.role        = null;
@@ -83,13 +90,102 @@ async function dmUser(userId, content) {
     } catch { /* DMs closed */ }
 }
 
-async function msgChannel(content) {
+async function sendHelp(userId, args, gm) {
+    const sub = args[0]?.toLowerCase();
+
+    if (sub === 'roles') {
+        const sub2 = args[1]?.toLowerCase();
+        if (!sub2) {
+            await dmUser(userId, embed('> Help — Roles', [
+                { name: 'How to use', value: `Use \`${PREFIX}help roles list\` to see all roles, or \`${PREFIX}help roles <role>\` to see details on a specific role.` }
+            ]));
+            return;
+        }
+
+        if (sub2 === 'list') {
+            const grouped = {};
+            for (const [name, r] of Object.entries(roles)) {
+                const cat = r.team === 'town' ? `Town (${r.type || '?'})` : r.team === 'mafia' ? 'Mafia' : `Neutral (${r.type || '?'})`;
+                grouped[cat] = grouped[cat] || [];
+                grouped[cat].push(name);
+            }
+            const fields = Object.entries(grouped).map(([cat, names]) => ({ name: cat, value: names.join(', ') }));
+            await dmUser(userId, embed('> All Roles', fields, `${PREFIX}help roles <name> for details`));
+            return;
+        }
+
+        // Must be a role name
+        const roleName = args.slice(1).join(' ');
+        const key = Object.keys(roles).find(k => k.toLowerCase() === roleName.toLowerCase());
+        if (!key) {
+            await dmUser(userId, `Role "${roleName}" not found. Try \`${PREFIX}help roles list\` for the full list.`);
+            return;
+        }
+
+        const r = roles[key];
+        const abilityLines = Object.entries(r.abilities || {})
+            .map(([n, ab]) => `\`${n}\` — ${ab.uses === Infinity ? '∞ uses' : `${ab.uses} use(s)`}${ab.msg ? ` *(target notified)*` : ''}`)
+            .join('\n') || 'No active abilities.';
+
+        await dmUser(userId, embed(`> Role Info: ${key}`, [
+            { name: 'Description', value: r.txt },
+            { name: 'Team', value: `${r.team}${r.type ? ` (${r.type})` : ''}` },
+            { name: 'Abilities', value: abilityLines },
+            { name: 'Immunities', value: Object.entries(r.immunity).filter(([, v]) => v).map(([k]) => k).join(', ') || 'None' },
+            { name: 'Can skip action?', value: r.canSleep ? 'Yes' : 'No' },
+        ]));
+        return;
+    }
+
+    // Default general help menu
+    const general = `\`${PREFIX}help\` \u2014 This list\n\`${PREFIX}ping\` \u2014 Latency check\n\`${PREFIX}info\` \u2014 How to play\n\`${PREFIX}settings\` \u2014 View/change settings\n\`${PREFIX}version\` \u2014 Bot version`;
+    const gameCmd = `\`${PREFIX}game queue\` \u2014 Open a game lobby *(GM)*\n\`${PREFIX}game join\` \u2014 Join the lobby\n\`${PREFIX}game leave\` \u2014 Leave the lobby\n\`${PREFIX}game start\` \u2014 Start the game *(GM)*\n\`${PREFIX}game end\` \u2014 Force-end the game *(GM)*\n\`${PREFIX}game players\` \u2014 List players\n\`${PREFIX}game stats\` \u2014 Show alive/dead status`;
+    const nightCmd = `\`${PREFIX}night start\` \u2014 Begin the night phase *(GM)*\n\`${PREFIX}night end\` \u2014 Force-resolve the night *(GM)*\n\`${PREFIX}lynch\` \u2014 Open a nomination + lynch vote *(day phase)*\n\`${PREFIX}vote <name/yes/no>\` \u2014 Cast a nomination or lynch vote`;
+    const dmCmd   = `DM me: \`${PREFIX}action <action> <target>\` \u2014 Perform your night action\nDM me: \`${PREFIX}action sleep\` \u2014 Skip your action (if allowed)\nDM me: \`${PREFIX}help roles list\` \u2014 See all game roles\nDM me: \`${PREFIX}help roles <role>\` \u2014 Get role details`;
+    const adminCmd = gm ? `\`${PREFIX}admin restart\` \u2014 Restart bot\n\`${PREFIX}admin add-players <n>\` \u2014 Add test players` : null;
+
+    const fields = [
+        { name: 'General', value: general },
+        { name: 'Game', value: gameCmd },
+        { name: 'Night / Day', value: nightCmd },
+        { name: 'Via DM / Help', value: dmCmd },
+    ];
+    if (adminCmd) fields.push({ name: 'Admin', value: adminCmd });
+
+    await dmUser(userId, embed(`> Help \u2014 ${GAME_TITLE}`, fields));
+}
+
+
+async function msgChannel(game, content) {
     try {
         const ch = await client.channels.fetch(game.channelId);
         if (typeof content === 'string') await ch.send(content);
         else await ch.send({ embeds: [content] });
     } catch (e) { console.error('msgChannel:', e.message); }
 }
+
+async function handlePlayerDeathEffects(game, deadPlayer) {
+    // 1. Mafioso promotion if Godfather died
+    if (deadPlayer.role === 'Godfather') {
+        const mafioso = Object.values(game.alive).find(p => p.role === 'Mafioso');
+        if (mafioso) {
+            mafioso.role = 'Godfather';
+            await dmUser(mafioso.id, `👑 The Godfather has died. You are now the **Godfather**. Your kill command is \`${PREFIX}action kill <target>\`.`);
+            await msgChannel(game, `_The Godfather has died. Leadership shifts within the shadows…_`);
+        }
+    }
+
+    // 2. Psychopath targets died (and target was not lynched)
+    for (const p of Object.values(game.alive)) {
+        if (p.role === 'Psychopath' && p.targetTag === deadPlayer.id) {
+            if (!p.targetLynched) {
+                p.role = 'Lunatic';
+                await dmUser(p.id, `🃏 Your target **${p.targetName}** has died. You have become a **Lunatic**! Trick the town into lynching you to win.`);
+            }
+        }
+    }
+}
+
 
 function getPlayingRole(guild) {
     return guild.roles.cache.find(r => r.name === PLAY_ROLE) || null;
@@ -99,63 +195,292 @@ function isGM(member) {
     return member?.roles.cache.some(r => r.name === 'Gamemaster') || false;
 }
 
-function findPlayer(nameFragment) {
+function findPlayer(game, nameFragment) {
     const lower = nameFragment.toLowerCase();
     return Object.values(game.alive).find(p => p.displayName.toLowerCase().startsWith(lower)) || null;
 }
 
-function buildNightPending() {
+function buildNightPending(game) {
     game.nightPending = new Set(
         Object.values(game.alive)
             .filter(p => roles[p.role]?.canTarget)
-            .map(p => p.tag)
+            .map(p => p.id)
     );
 }
 
-async function checkNightOver() {
+async function checkNightOver(game) {
     if (game.nightPending.size > 0 || !game.isNight) return;
-    await doResolveNight();
+    await doResolveNight(game);
 }
 
-async function doResolveNight() {
-    game.isNight = false;
-    const announcements = await resolveNight(game, dmUser);
-    const fields = announcements.map(line => ({ name: '\u200b', value: line }));
-    await msgChannel({ embeds: [embed(`\u2600\ufe0f  Day ${game.day} \u2014 Night Report`, fields, `${PREFIX}help for commands`)] });
+async function callClaude(prompt) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+        throw new Error("No ANTHROPIC_API_KEY env variable found.");
+    }
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        },
+        body: JSON.stringify({
+            model: "claude-3-5-haiku-20241022",
+            max_tokens: 1200,
+            messages: [{ role: "user", content: prompt }]
+        })
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+    }
+    const data = await response.json();
+    return data.content[0].text;
+}
 
-    const logLines = Object.entries(game.nightActions)
-        .map(([tag, a]) => `**${tag}** \u2192 ${a.action} \u2192 ${a.target || '(auto)'}`);
-    const gm = Object.values({ ...game.alive, ...game.dead }).find(p => p.tag === game.master);
-    if (gm) {
-        await dmUser(gm.id, embed('\ud83d\udccb  Night Log (GM)',
+async function doResolveNight(game) {
+    game.isNight = false;
+
+    // Cache actions/day before resolveNight resets/mutates them
+    const nightActionsCopy = { ...game.nightActions };
+    const mafiosoKillCopy = game.mafiosoKill;
+    const dayBeforeResolve = game.day;
+
+    await resolveNight(game, dmUser);
+
+    let narrativeText = '';
+    let summaryText = '';
+    let rolesText = '';
+    let useClaude = false;
+
+    if (process.env.ANTHROPIC_API_KEY) {
+        try {
+            const deadPlayersInfo = game.nightlyDead.map(tag => {
+                const p = game.dead[tag];
+                return `- ${p.displayName} (Role: ${p.role}, Cause of Death: ${p.causeOfDeath})`;
+            }).join('\n') || 'None';
+
+            const alivePlayersInfo = Object.values(game.alive).map(p => `- ${p.displayName} (Role: ${p.role})`).join('\n');
+
+            const actionsInfo = Object.entries(nightActionsCopy).map(([id, a]) => {
+                const actor = game.alive[id] || game.dead[id];
+                const target = game.alive[a.target] || game.dead[a.target];
+                const actorName = actor ? actor.displayName : id;
+                const targetName = target ? target.displayName : (a.target || 'None');
+                return `- ${actorName} (${a.role}) performed action "${a.action}" on target ${targetName}`;
+            }).join('\n');
+
+            const deathHistoryInfo = (game.deathHistory || []).map(h => `- Night ${h.night}: ${h.playerName} (${h.role}) killed by/died of "${h.cause}"`).join('\n') || 'No previous deaths.';
+
+            const prompt = `You are the gamemaster and narrator for the social deduction game "Town of Charlotte".
+Last night (Night ${dayBeforeResolve}) just resolved. You must generate:
+1. An immersive, creative story narrative of the night's events and morning discoveries.
+2. A direct summary of the key actions that occurred.
+3. A reveal of the roles of any players who died last night.
+
+Here is the data for the night:
+- Night: ${dayBeforeResolve}
+- Dead players from last night:
+${deadPlayersInfo}
+
+- Alive players:
+${alivePlayersInfo}
+
+- Raw actions submitted:
+${actionsInfo}
+${mafiosoKillCopy ? `Note: Mafia targeted ${game.alive[mafiosoKillCopy]?.displayName || game.dead[mafiosoKillCopy]?.displayName || mafiosoKillCopy} for a kill.` : ''}
+
+- Previous kills history (for continuity and style references):
+${deathHistoryInfo}
+
+Please output your response exactly in this format with these three tags:
+
+[NARRATIVE]
+<Write 1-3 paragraphs of immersive, engaging, and dramatic story prose about the night's events.
+Rule: Shift the narrative focus to a POV that is most pertinent to this night's actions. This could be an alive player "visiting in the morning" who did nothing that night, or the town collectively finding a body. Keep these POVs fresh, new, and different.
+Rule: Reference details/style of previous kills if relevant (e.g. claw marks for werewolf, stab wounds for serial killer, etc.).>
+
+[SUMMARY]
+<Provide a direct, concise summary of the key actions (e.g. who protected who, who attacked who, who died).
+Follow this style:
+Mark -> protected Sara.
+Tom -> attacked Sara.
+Mark and Tom killed each other.>
+
+[ROLES]
+<List the roles of the players who died last night.
+Follow this style:
+Mark was the Bodyguard.
+Tom was the Mafioso.>`;
+
+            const responseText = await callClaude(prompt);
+
+            const narrativeMatch = responseText.match(/\[NARRATIVE\]([\s\S]*?)(?=\[SUMMARY\]|$)/i);
+            const summaryMatch   = responseText.match(/\[SUMMARY\]([\s\S]*?)(?=\[ROLES\]|$)/i);
+            const rolesMatch     = responseText.match(/\[ROLES\]([\s\S]*?)$/i);
+
+            if (narrativeMatch) narrativeText = narrativeMatch[1].trim();
+            if (summaryMatch) summaryText = summaryMatch[1].trim();
+            if (rolesMatch) rolesText = rolesMatch[1].trim();
+
+            if (narrativeText && (summaryText || rolesText)) {
+                useClaude = true;
+            }
+        } catch (e) {
+            console.error('Failed to generate story narrative with Claude:', e.message);
+        }
+    }
+
+    if (!useClaude) {
+        narrativeText = `🌅 The night has ended, and the morning sun rises over Charlotte. The town gathers to see who survived the cold darkness...`;
+
+        const summaryLines = [];
+        for (const [id, a] of Object.entries(nightActionsCopy)) {
+            const actor = game.alive[id] || game.dead[id];
+            const target = game.alive[a.target] || game.dead[a.target];
+            if (actor && target) {
+                if (a.action === 'guard') {
+                    summaryLines.push(`${actor.displayName} -> protected ${target.displayName}.`);
+                } else if (['kill', 'shoot', 'execute', 'rampage', 'explode'].includes(a.action)) {
+                    summaryLines.push(`${actor.displayName} -> attacked ${target.displayName}.`);
+                } else if (a.action === 'heal') {
+                    summaryLines.push(`${actor.displayName} -> healed ${target.displayName}.`);
+                } else if (a.action === 'block' || a.action === 'hypnotize') {
+                    summaryLines.push(`${actor.displayName} -> role-blocked ${target.displayName}.`);
+                }
+            }
+        }
+        if (mafiosoKillCopy) {
+            const target = game.alive[mafiosoKillCopy] || game.dead[mafiosoKillCopy];
+            if (target) {
+                summaryLines.push(`Mafia -> attacked ${target.displayName}.`);
+            }
+        }
+
+        for (const deadTag of game.nightlyDead) {
+            const deadPlayer = game.dead[deadTag];
+            if (deadPlayer) {
+                summaryLines.push(`${deadPlayer.displayName} died of "${deadPlayer.causeOfDeath}".`);
+            }
+        }
+
+        summaryText = summaryLines.join('\n');
+
+        const rolesLines = [];
+        for (const deadTag of game.nightlyDead) {
+            const deadPlayer = game.dead[deadTag];
+            if (deadPlayer) {
+                rolesLines.push(`${deadPlayer.displayName} was the ${deadPlayer.role}.`);
+            }
+        }
+        rolesText = rolesLines.join('\n');
+    }
+
+    const fields = [];
+    if (useClaude) {
+        fields.push({ name: '📖  Story Narrative', value: narrativeText });
+    }
+    fields.push({ name: '📊  Direct Summary', value: summaryText || 'No actions resolved.' });
+    if (rolesText) {
+        fields.push({ name: '🎴  Roles Revealed', value: rolesText });
+    }
+
+    if (game.nightlyDead.length > 0) {
+        fields.push({
+            name: '📝  Last Will & Testament',
+            value: `To the deceased (${game.nightlyDead.map(tag => game.dead[tag]?.displayName).join(', ')}): This is your last chance to share your last will and testament (who you think killed you, any information you gathered that you hadn't shared, etc.) before you are officially "dead". You may post it in the chat or share it in person on your own terms.`
+        });
+    }
+
+    if (config.publicNightResults) {
+        await msgChannel(game, { embeds: [embed(`☀️ Day ${game.day} — Night Report`, fields, `${PREFIX}help for commands`)] });
+    } else {
+        if (game.master) {
+            await dmUser(game.master, embed(`☀️ Day ${game.day} — Night Report`, fields, `Read these results aloud to the channel!`));
+        }
+        await msgChannel(game, `☀️ **Day ${game.day}** has begun. The Gamemaster has been DMed the night report.`);
+    }
+
+    const logLines = Object.entries(nightActionsCopy)
+        .map(([id, a]) => {
+            const actor = game.alive[id] || game.dead[id];
+            const target = game.alive[a.target] || game.dead[a.target];
+            const actorName = actor ? actor.displayName : id;
+            const targetName = target ? target.displayName : (a.target || '(auto)');
+            return `**${actorName}** → ${a.action} → ${targetName}`;
+        });
+    if (game.master) {
+        await dmUser(game.master, embed('📋  Night Log (GM)',
             logLines.length ? logLines.map(l => ({ name: '\u200b', value: l })) : [{ name: '\u200b', value: 'No actions.' }]
         ));
     }
 
-    // Check for Mafioso promotion (Godfather died during the night)
-    if (!Object.values(game.alive).find(p => p.role === 'Godfather')) {
-        const mafioso = Object.values(game.alive).find(p => p.role === 'Mafioso');
-        if (mafioso) {
-            mafioso.role = 'Godfather';
-            await dmUser(mafioso.id, `\ud83d\udc51 The Godfather has fallen. You are now the **Godfather**. Use \`${PREFIX}action kill <target>\` tonight.`);
+    // Handle death side effects for all players who died tonight
+    for (const deadTag of game.nightlyDead) {
+        const deadPlayer = game.dead[deadTag];
+        if (deadPlayer) {
+            await handlePlayerDeathEffects(game, deadPlayer);
         }
     }
 
     const { winner, reason } = checkWinConditions(game);
-    if (winner) { await endGame(reason); return; }
+    if (winner) { await endGame(game, reason); return; }
 
     // Reset day-phase lynch state
     game.lynch = null;
     game.lynchedToday = false;
 
-    await msgChannel(`\u2600\ufe0f  **Day ${game.day}** has begun. Discuss freely, then use \`${PREFIX}lynch\` to open a nomination vote.`);
+    if (config.publicNightResults) {
+        await msgChannel(game, `☀️ **Day ${game.day}** has begun. Discuss freely, then use \`${PREFIX}lynch\` to open a nomination vote.`);
+    } else {
+        await msgChannel(game, `GM, please read the results. When ready, discuss freely and use \`${PREFIX}lynch\` to open a nomination vote.`);
+    }
 }
 
-async function endGame(reason) {
-    await msgChannel({ embeds: [embed('\ud83c\udfc6  Game Over', [{ name: reason, value: 'Thanks for playing!' }])] });
+async function endGame(game, reason) {
+    const { winner } = checkWinConditions(game);
+    const allPlayers = Object.values({ ...game.alive, ...game.dead });
+    const winners = [];
+
+    for (const p of allPlayers) {
+        const r = roles[p.role];
+        if (!r) continue;
+
+        if (winner === 'town' && r.team === 'town') {
+            winners.push(p);
+        } else if (winner === 'mafia' && r.team === 'mafia') {
+            winners.push(p);
+        } else if (winner === 'neutral') {
+            if (r.type === 'killing') {
+                if (game.alive[p.id]) winners.push(p);
+            }
+        }
+
+        if (p.role === 'Survivor' && game.alive[p.id]) {
+            winners.push(p);
+        }
+        if (p.role === 'Witch' && (winner === 'town' || winner === 'mafia' || winner === 'neutral')) {
+            winners.push(p);
+        }
+        if (p.role === 'Lunatic' && p.causeOfDeath === 'lynched by the town') {
+            winners.push(p);
+        }
+        if (p.role === 'Psychopath' && p.targetLynched) {
+            winners.push(p);
+        }
+    }
+
+    const winnerNames = winners.map(p => `**${p.displayName}** (${p.role})`).join('\n') || 'Nobody';
+
+    await msgChannel(game, { embeds: [embed('\ud83c\udfc6  Game Over', [
+        { name: reason, value: 'Thanks for playing!' },
+        { name: '🏆 Winners', value: winnerNames }
+    ])] });
+
     const reveal = Object.values({ ...game.alive, ...game.dead })
         .map(p => `**${p.displayName}** \u2014 ${p.role}`).join('\n');
-    await msgChannel({ embeds: [embed('\ud83d\udcdc  Full Role Reveal', [{ name: 'All players', value: reveal || 'None' }])] });
+    await msgChannel(game, { embeds: [embed('\ud83d\udcdc  Full Role Reveal', [{ name: 'All players', value: reveal || 'None' }])] });
 
     try {
         const guild = await client.guilds.fetch(game.guildId);
@@ -167,7 +492,8 @@ async function endGame(reason) {
             try { const mCh = await guild.channels.fetch(game.mafiaChannelId); await mCh.delete(); } catch { }
         }
     } catch { }
-    game = freshGame();
+    
+    games[game.guildId] = freshGame();
 }
 
 client.once('ready', () => {
@@ -180,8 +506,14 @@ client.on('messageCreate', async msg => {
     if (msg.author.bot) return;
     if (msg.channel.type === ChannelType.DM) return;
 
+    const guildId = msg.guild.id;
+    if (!games[guildId]) {
+        games[guildId] = freshGame();
+    }
+    const game = games[guildId];
+
     // ── Blackmail enforcement: silently delete messages from blackmailed players ──
-    if (game.playing && !game.isNight && game.blackmailed.includes(msg.author.tag)) {
+    if (game.playing && !game.isNight && game.blackmailed.includes(msg.author.id)) {
         // Only suppress non-command messages during the day phase
         if (!msg.content.startsWith(PREFIX)) {
             try { await msg.delete(); } catch {}
@@ -195,24 +527,13 @@ client.on('messageCreate', async msg => {
     const args    = msg.content.slice(PREFIX.length).trim().split(/\s+/g);
     const command = args.shift().toLowerCase();
     const gm      = isGM(msg.member);
-    const tag     = msg.author.tag;
+    const tag     = msg.author.id;
     const listed  = !!game.alive[tag];
 
     // ── help ──────────────────────────────────────────────────────────────
     if (command === 'help') {
-        const general = `\`${PREFIX}help\` \u2014 This list\n\`${PREFIX}ping\` \u2014 Latency check\n\`${PREFIX}info\` \u2014 How to play\n\`${PREFIX}version\` \u2014 Bot version`;
-        const gameCmd = `\`${PREFIX}game queue\` \u2014 Open a game lobby *(GM)*\n\`${PREFIX}game join\` \u2014 Join the lobby\n\`${PREFIX}game leave\` \u2014 Leave the lobby\n\`${PREFIX}game start\` \u2014 Start the game *(GM)*\n\`${PREFIX}game end\` \u2014 Force-end the game *(GM)*\n\`${PREFIX}game players\` \u2014 List players\n\`${PREFIX}game stats\` \u2014 Show alive/dead status`;
-        const nightCmd = `\`${PREFIX}night start\` \u2014 Begin the night phase *(GM)*\n\`${PREFIX}night end\` \u2014 Force-resolve the night *(GM)*\n\`${PREFIX}lynch\` \u2014 Open a nomination + lynch vote *(day phase)*\n\`${PREFIX}vote <name/yes/no>\` \u2014 Cast a nomination or lynch vote`;
-        const dmCmd   = `DM me: \`${PREFIX}action <action> <target>\` \u2014 Perform your night action\nDM me: \`${PREFIX}action sleep\` \u2014 Skip your action (if allowed)`;
-        const adminCmd = gm ? `\`${PREFIX}admin restart\` \u2014 Restart bot\n\`${PREFIX}admin add-players <n>\` \u2014 Add test players` : null;
-        const fields = [
-            { name: 'General', value: general },
-            { name: 'Game', value: gameCmd },
-            { name: 'Night / Day', value: nightCmd },
-            { name: 'Via DM', value: dmCmd },
-        ];
-        if (adminCmd) fields.push({ name: 'Admin', value: adminCmd });
-        return msg.channel.send({ embeds: [embed(`> Help \u2014 ${GAME_TITLE}`, fields)] });
+        await sendHelp(msg.author.id, args, gm);
+        return;
     }
 
     // ── ping ──────────────────────────────────────────────────────────────
@@ -246,9 +567,6 @@ client.on('messageCreate', async msg => {
             game.master    = tag;
             game.guildId   = msg.guild.id;
             game.channelId = msg.channel.id;
-            game.alive[tag] = new Player(msg.author);
-            const playRole = getPlayingRole(msg.guild);
-            if (playRole) await msg.member.roles.add(playRole).catch(() => {});
             await dmUser(msg.author.id, embed('> You are the Gamemaster', [
                 { name: `You have queued a ${GAME_TITLE} game.`, value: `Players can join with \`${PREFIX}game join\`. Start with \`${PREFIX}game start\` when ready.` },
             ]));
@@ -261,7 +579,7 @@ client.on('messageCreate', async msg => {
             if (!game.queued) return msg.reply('no game is currently open to join.');
             if (game.tutorial) return msg.reply('this is a tutorial game; no other players may join.');
             if (listed) return msg.reply('you have already joined.');
-            if (tag === game.master) return msg.reply('you are the Gamemaster and are already in the game.');
+            if (tag === game.master) return msg.reply('you are the Gamemaster and cannot join the game as a player.');
             if (Object.keys(game.alive).length >= MAX_PLAYERS) return msg.reply(`the game is full (${MAX_PLAYERS} players max).`);
             game.alive[tag] = new Player(msg.author);
             const playRole = getPlayingRole(msg.guild);
@@ -277,13 +595,25 @@ client.on('messageCreate', async msg => {
             if (!listed) return msg.reply('you are not in the current game.');
             if (game.playing) {
                 const p = game.alive[tag];
-                game.dead[tag] = { ...p, causeOfDeath: 'abandoned the town' };
+                game.dead[tag] = { ...p, causeOfDeath: 'suicide' };
                 delete game.alive[tag];
+                
+                if (game.isNight) {
+                    game.nightPending.delete(tag);
+                }
+
                 const playRole = getPlayingRole(msg.guild);
                 if (playRole) await msg.member.roles.remove(playRole).catch(() => {});
-                await msg.channel.send(`_${msg.author} (**${p.role}**) has abandoned the town and is dead._`);
+                await msg.channel.send(`_${msg.author} (**${p.role}**) has committed suicide and is dead._`);
+                
+                await handlePlayerDeathEffects(game, p);
+
+                if (game.isNight) {
+                    await checkNightOver(game);
+                }
+
                 const { winner, reason } = checkWinConditions(game);
-                if (winner) await endGame(reason);
+                if (winner) await endGame(game, reason);
                 return;
             }
             delete game.alive[tag];
@@ -323,14 +653,45 @@ client.on('messageCreate', async msg => {
             game.queued  = false;
             game.playing = true;
             game.day     = 1;
+            game.isNight = true;
+            game.nightActions = {};
+            game.jailedThisNight = [];
+            game.blackmailed = [];
             assignRoles(game.alive);
+            buildNightPending(game);
+
+            // Assign target to Psychopaths
+            const allPlayers = Object.values(game.alive);
+            const psychopaths = allPlayers.filter(p => p.role === 'Psychopath');
+            if (psychopaths.length) {
+                const townPlayers = allPlayers.filter(p => roles[p.role]?.team === 'town' && p.role !== 'Jailor');
+                const backupTown = allPlayers.filter(p => roles[p.role]?.team === 'town');
+                const genericTargets = allPlayers.filter(p => p.role !== 'Psychopath');
+                
+                for (const psycho of psychopaths) {
+                    let targetPool = townPlayers;
+                    if (!targetPool.length) targetPool = backupTown;
+                    if (!targetPool.length) targetPool = genericTargets;
+                    
+                    if (targetPool.length) {
+                        const target = targetPool[Math.floor(Math.random() * targetPool.length)];
+                        psycho.targetTag = target.tag;
+                        psycho.targetName = target.displayName;
+                    }
+                }
+            }
+
             for (const p of Object.values(game.alive)) {
                 const r = roles[p.role];
                 const abilityList = Object.entries(r.abilities || {})
                     .map(([name, ab]) => `\`${name}\` \u2014 ${ab.uses === Infinity ? '\u221e uses' : `${ab.uses} use(s)`}`)
                     .join('\n') || 'No active abilities.';
+                let roleMsg = r.txt;
+                if (p.role === 'Psychopath' && p.targetName) {
+                    roleMsg += `\n\n🎯 **Your Target:** **${p.targetName}**`;
+                }
                 await dmUser(p.id, embed(`> Night 1 \u2014 Your Role: ${p.role}`, [
-                    { name: 'Role Description', value: r.txt },
+                    { name: 'Role Description', value: roleMsg },
                     { name: 'Abilities', value: abilityList },
                 ], `DM me: ${PREFIX}action <ability> <target>`));
             }
@@ -360,7 +721,19 @@ client.on('messageCreate', async msg => {
         if (sub === 'end') {
             if (!gm) return msg.reply('you must be a Gamemaster to end the game.');
             if (!game.playing && !game.queued) return msg.reply('no game is currently active.');
-            return endGame('The Gamemaster has ended the game.');
+            
+            if (game.queued) {
+                const playRole = getPlayingRole(msg.guild);
+                if (playRole) {
+                    for (const p of Object.values(game.alive)) {
+                        try { const m = await msg.guild.members.fetch(p.id); await m.roles.remove(playRole); } catch {}
+                    }
+                }
+                games[guildId] = freshGame();
+                return msg.channel.send('🛑 The Gamemaster has cancelled the game lobby.');
+            }
+            
+            return endGame(game, 'The Gamemaster has ended the game.');
         }
         return msg.reply(`Unknown game sub-command. Try \`${PREFIX}help\`.`);
     }
@@ -372,12 +745,12 @@ client.on('messageCreate', async msg => {
         if (args[0] === 'start') {
             if (game.isNight) return msg.reply('it is already night.');
             if (game.lynch) return msg.reply('a lynch vote is still in progress. Resolve it first with `.lynch tally` or wait.');
-            game.isNight = true; game.nightActions = {}; game.jailedThisNight = []; game.blackmailed = []; buildNightPending();
+            game.isNight = true; game.nightActions = {}; game.jailedThisNight = []; game.blackmailed = []; buildNightPending(game);
             return msg.channel.send({ embeds: [embed(`\ud83c\udf19  Night ${game.day}`, [{ name: 'Night has begun.', value: 'DM me your actions!' }])] });
         }
         if (args[0] === 'end') {
             if (!game.isNight) return msg.reply('it is not currently night.');
-            game.nightPending.clear(); return doResolveNight();
+            game.nightPending.clear(); return doResolveNight(game);
         }
         return msg.reply(`Use \`${PREFIX}night start\` or \`${PREFIX}night end\`.`);
     }
@@ -399,21 +772,41 @@ client.on('messageCreate', async msg => {
             const nomMsg = await game.lynch.nominationMsg.fetch().catch(() => null);
             if (!nomMsg) { game.lynch = null; return msg.reply('could not fetch the nomination message. Lynch cancelled.'); }
 
-            // Tally: reaction emoji → count (excluding the bot itself)
-            let topTag = null, topCount = 0;
+            // Tally: reaction emoji → count (excluding the bot itself & non-alive users)
+            const allNominationVotes = {}; // voterTag -> nominatedTag
+
             for (const [emoji, playerTag] of Object.entries(game.lynch.emojiMap)) {
                 const reaction = nomMsg.reactions.cache.get(emoji);
-                const count = reaction ? reaction.count - 1 : 0; // subtract bot's own reaction
-                if (count > topCount) { topCount = count; topTag = playerTag; }
+                if (reaction) {
+                    const users = await reaction.users.fetch();
+                    for (const [userId] of users) {
+                        if (userId === client.user.id) continue;
+                        if (game.alive[userId]) {
+                            allNominationVotes[userId] = playerTag;
+                        }
+                    }
+                }
             }
-            // Also merge in text votes from .vote <name>
-            // Build per-nominee text-vote counts, then compare against reaction leader
-            const textTally = {};
-            for (const nominatedTag of Object.values(game.lynch.textVotes)) {
-                textTally[nominatedTag] = (textTally[nominatedTag] || 0) + 1;
+
+            // Merge in text votes (overwriting/taking precedence)
+            for (const [voterTag, nominatedTag] of Object.entries(game.lynch.textVotes)) {
+                if (game.alive[voterTag]) {
+                    allNominationVotes[voterTag] = nominatedTag;
+                }
             }
-            for (const [nominatedTag, textCount] of Object.entries(textTally)) {
-                if (textCount > topCount) { topCount = textCount; topTag = nominatedTag; }
+
+            // Tally counts from allNominationVotes
+            const finalTally = {};
+            for (const nominatedTag of Object.values(allNominationVotes)) {
+                finalTally[nominatedTag] = (finalTally[nominatedTag] || 0) + 1;
+            }
+
+            let topTag = null, topCount = 0;
+            for (const [playerTag, count] of Object.entries(finalTally)) {
+                if (count > topCount) {
+                    topCount = count;
+                    topTag = playerTag;
+                }
             }
 
             if (!topTag || topCount === 0) {
@@ -469,12 +862,39 @@ client.on('messageCreate', async msg => {
 
             const yesReaction = vMsg.reactions.cache.get('✅');
             const noReaction  = vMsg.reactions.cache.get('❌');
-            let yesVotes = (yesReaction ? yesReaction.count - 1 : 0);
-            let noVotes  = (noReaction  ? noReaction.count  - 1 : 0);
+
+            const finalLynchVotes = {}; // voterTag -> 'yes' | 'no'
+
+            if (yesReaction) {
+                const users = await yesReaction.users.fetch();
+                for (const [userId] of users) {
+                    if (userId === client.user.id) continue;
+                    if (game.alive[userId]) {
+                        finalLynchVotes[userId] = 'yes';
+                    }
+                }
+            }
+            if (noReaction) {
+                const users = await noReaction.users.fetch();
+                for (const [userId] of users) {
+                    if (userId === client.user.id) continue;
+                    if (game.alive[userId]) {
+                        finalLynchVotes[userId] = 'no';
+                    }
+                }
+            }
 
             // Merge in text votes cast via .vote yes / .vote no
-            for (const v of Object.values(game.lynch.textVotes)) {
-                if (v === 'yes') yesVotes++;
+            for (const [voterTag, voteVal] of Object.entries(game.lynch.textVotes)) {
+                if (game.alive[voterTag]) {
+                    finalLynchVotes[voterTag] = voteVal;
+                }
+            }
+
+            let yesVotes = 0;
+            let noVotes  = 0;
+            for (const voteVal of Object.values(finalLynchVotes)) {
+                if (voteVal === 'yes') yesVotes++;
                 else noVotes++;
             }
 
@@ -494,16 +914,24 @@ client.on('messageCreate', async msg => {
                 const playRole = getPlayingRole(msg.guild);
                 try { const m = await msg.guild.members.fetch(onBlock.id); if (playRole) await m.roles.remove(playRole); } catch {}
 
+                // Check if this target lynched was a Psychopath target
+                for (const p of Object.values(game.alive)) {
+                    if (p.role === 'Psychopath' && p.targetTag === onBlock.tag) {
+                        p.targetLynched = true;
+                    }
+                }
+
                 // ── Lunatic (Jester) special win: if they get lynched, they win immediately ──
                 if (onBlock.role === 'Lunatic') {
                     await dmUser(onBlock.id, `🃏 You were **lynched** by the town! You WIN — the Lunatic's goal was achieved!`);
                     await msg.channel.send({ embeds: [embed('🃏  The Lunatic Wins!', [
                         { name: `${onBlock.displayName} was lynched — and that was exactly their plan!`, value: `Their role was **Lunatic**.\n✅ ${yesVotes} yes / ❌ ${noVotes} no (needed ${needed})\n\n*The Lunatic (Jester) wins by tricking the town into lynching them.*` },
                     ])] });
-                    // Lunatic winning does not end the game for others, but they personally win
-                    // Check if any faction *also* wins now
+                    
+                    await handlePlayerDeathEffects(game, onBlock);
+
                     const { winner, reason } = checkWinConditions(game);
-                    if (winner) return endGame(reason);
+                    if (winner) return endGame(game, reason);
                     return msg.channel.send(`🃏 The Lunatic has won! The game continues for remaining factions. Use \`${PREFIX}night start\` when ready.`);
                 }
 
@@ -512,18 +940,10 @@ client.on('messageCreate', async msg => {
                     { name: `${onBlock.displayName} has been lynched!`, value: `Their role was **${onBlock.role}**.\n✅ ${yesVotes} yes / ❌ ${noVotes} no (needed ${needed})` },
                 ])] });
 
-                // ── Mafioso promotion: if Godfather was lynched, Mafioso becomes new GF ──
-                if (onBlock.role === 'Godfather') {
-                    const mafioso = Object.values(game.alive).find(p => p.role === 'Mafioso');
-                    if (mafioso) {
-                        mafioso.role = 'Godfather';
-                        await dmUser(mafioso.id, `👑 The Godfather has been lynched. You are now the **Godfather**. Your kill command is \`${PREFIX}action kill <target>\`.`);
-                        await msg.channel.send(`_The Godfather was among those lynched. Leadership shifts within the shadows…_`);
-                    }
-                }
+                await handlePlayerDeathEffects(game, onBlock);
 
                 const { winner, reason } = checkWinConditions(game);
-                if (winner) return endGame(reason);
+                if (winner) return endGame(game, reason);
                 return msg.channel.send(`The town has spoken. Use \`${PREFIX}night start\` when ready for the next night.`);
             } else {
                 // Not enough votes — spared
@@ -535,61 +955,65 @@ client.on('messageCreate', async msg => {
         }
 
         // ── .lynch  (no args, anyone) — open nomination phase ──
-        if (game.lynchedToday) return msg.reply('a player has already been lynched today. Use `.night start` to proceed to the next night.');
-        if (game.lynch) return msg.reply('a lynch vote is already in progress!');
+        if (sub !== 'close' && sub !== 'tally') {
+            if (!listed) return msg.reply('you must be alive and in the game to start a lynch vote.');
+            if (game.lynchedToday) return msg.reply('a player has already been lynched today. Use `.night start` to proceed to the next night.');
+            if (game.lynch) return msg.reply('a lynch vote is already in progress!');
 
-        const aliveList = Object.values(game.alive);
-        if (aliveList.length < 2) return msg.reply('not enough players alive to hold a lynch.');
+            const aliveList = Object.values(game.alive);
+            if (aliveList.length < 2) return msg.reply('not enough players alive to hold a lynch.');
 
-        const NUMBER_EMOJIS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'];
-        const nominees = aliveList.slice(0, NUMBER_EMOJIS.length);
-        const emojiMap = {};
-        nominees.forEach((p, i) => { emojiMap[NUMBER_EMOJIS[i]] = p.tag; });
+            const NUMBER_EMOJIS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'];
+            const nominees = aliveList.slice(0, NUMBER_EMOJIS.length);
+            const emojiMap = {};
+            nominees.forEach((p, i) => { emojiMap[NUMBER_EMOJIS[i]] = p.tag; });
 
-        const nomineeLines = nominees
-            .map((p, i) => `${NUMBER_EMOJIS[i]} **${p.displayName}**`)
-            .join('\n');
+            const nomineeLines = nominees
+                .map((p, i) => `${NUMBER_EMOJIS[i]} **${p.displayName}**`)
+                .join('\n');
 
-        const nominationMsg = await msg.channel.send({ embeds: [embed(
-            '🗳️  Lynch — Nomination Phase',
-            [
-                {
-                    name: 'Who should face the lynching block?',
-                    value: nomineeLines,
-                },
-                {
-                    name: 'How to nominate',
-                    value:
-                        `React with the number next to the player you want to put up for lynching.\n` +
-                        `You can also use \`${PREFIX}vote <name>\` as a text alternative.\n\n` +
-                        `Once discussion is done, the GM runs \`${PREFIX}lynch close\` to see who ` +
-                        `got the most nominations — that player goes on the **lynching block**.\n` +
-                        `Then a separate ✅/❌ vote determines if they are actually lynched ` +
-                        `(**⅔ of town required to lynch**).`,
-                },
-            ],
-            `GM: ${PREFIX}lynch close to end nominations`
-        )] });
+            const nominationMsg = await msg.channel.send({ embeds: [embed(
+                '🗳️  Lynch — Nomination Phase',
+                [
+                    {
+                        name: 'Who should face the lynching block?',
+                        value: nomineeLines,
+                    },
+                    {
+                        name: 'How to nominate',
+                        value:
+                            `React with the number next to the player you want to put up for lynching.\n` +
+                            `You can also use \`${PREFIX}vote <name>\` as a text alternative.\n\n` +
+                            `Once discussion is done, the GM runs \`${PREFIX}lynch close\` to see who ` +
+                            `got the most nominations — that player goes on the **lynching block**.\n` +
+                            `Then a separate ✅/❌ vote determines if they are actually lynched ` +
+                            `(**⅔ of town required to lynch**).`,
+                    },
+                ],
+                `GM: ${PREFIX}lynch close to end nominations`
+            )] });
 
-        for (const emoji of Object.keys(emojiMap)) {
-            await nominationMsg.react(emoji).catch(() => {});
+            for (const emoji of Object.keys(emojiMap)) {
+                await nominationMsg.react(emoji).catch(() => {});
+            }
+
+            game.lynch = {
+                phase: 'nominating',
+                nominationMsg,
+                nominees: nominees.map(p => p.tag),
+                emojiMap,
+                onBlock: null,
+                voteMsg: null,
+                textVotes: {},
+            };
+            return;
         }
-
-        game.lynch = {
-            phase: 'nominating',
-            nominationMsg,
-            nominees: nominees.map(p => p.tag),
-            emojiMap,
-            onBlock: null,
-            voteMsg: null,
-            textVotes: {},
-        };
-        return;
     }
 
     // ── vote ─────────────────────────────────────────────────────────────
     if (command === 'vote') {
         if (!game.playing || game.isNight) return msg.reply('voting can only happen during the day phase.');
+        if (!listed) return msg.reply('you must be alive and in the game to vote.');
         if (!game.lynch) return msg.reply(`No lynch vote is in progress. Anyone can start one with \`${PREFIX}lynch\`.`);
 
         const voteArg = args.join(' ').toLowerCase();
@@ -623,6 +1047,45 @@ client.on('messageCreate', async msg => {
         }
 
         return msg.reply('Something went wrong with the lynch state. Ask the GM to reset.');
+    }
+
+    // ── settings ──────────────────────────────────────────────────────────
+    if (command === 'settings') {
+        if (game.playing || game.queued) {
+            return msg.reply('settings can only be modified when no game is active or queued.');
+        }
+
+        const sub = args[0]?.toLowerCase();
+        if (!sub) {
+            const status = config.publicNightResults ? 'Enabled (posted publicly)' : 'Disabled (DMed to GM)';
+            return msg.channel.send({ embeds: [embed(
+                '> Game Settings',
+                [
+                    {
+                        name: 'public-results',
+                        value: `Status: **${status}**\n` +
+                               `Description: Controls whether night resolution results are posted to the public channel or DMed secretly to the GM.\n` +
+                               `To change, run \`${PREFIX}settings public-results <on/off>\``
+                    }
+                ],
+                `Prefix: ${PREFIX}`
+            )] });
+        }
+
+        if (sub === 'public-results') {
+            const val = args[1]?.toLowerCase();
+            if (val === 'on' || val === 'true' || val === 'enable') {
+                config.publicNightResults = true;
+                return msg.reply('✅ Night report results will now be posted publicly to the chat channel.');
+            } else if (val === 'off' || val === 'false' || val === 'disable') {
+                config.publicNightResults = false;
+                return msg.reply('✅ Night report results will now be DMed secretly to the Gamemaster.');
+            } else {
+                return msg.reply(`Invalid value. Use \`${PREFIX}settings public-results on\` or \`${PREFIX}settings public-results off\`.`);
+            }
+        }
+
+        return msg.reply(`Unknown settings option. Try \`${PREFIX}settings\` to view available options.`);
     }
 
     // ── roles (public info) ───────────────────────────────────────────────
@@ -698,7 +1161,28 @@ client.on('messageCreate', async msg => {
 
     const args    = msg.content.slice(PREFIX.length).trim().split(/\s+/g);
     const command = args.shift().toLowerCase();
-    const tag     = msg.author.tag;
+    const tag     = msg.author.id;
+
+    // Find the active game containing the player
+    let game = null;
+    for (const g of Object.values(games)) {
+        if (g.alive[tag] || g.dead[tag] || g.master === tag) {
+            game = g;
+            break;
+        }
+    }
+
+    // ── help (DM) ──────────────────────────────────────────────────────────
+    if (command === 'help') {
+        const isGameMaster = game ? (game.master === tag) : false;
+        await sendHelp(msg.author.id, args, isGameMaster);
+        return;
+    }
+
+    if (!game) {
+        return msg.channel.send('You are not in any active game.');
+    }
+
     const player  = game.alive[tag];
 
     // ── game roles / role info ─────────────────────────────────────────────
@@ -739,7 +1223,21 @@ client.on('messageCreate', async msg => {
         if (!game.nightPending.has(tag)) return msg.channel.send('You have already submitted your action for tonight.');
 
         const role  = roles[player.role];
-        const action = args[0];
+        let action = args[0];
+        let targetName = '';
+
+        // Extract action and targetName correctly to support spaces in targets
+        const firstSpaceIdx = msg.content.indexOf(' ');
+        if (firstSpaceIdx !== -1) {
+            const afterCmd = msg.content.slice(firstSpaceIdx).trim();
+            const spaceAfterAbility = afterCmd.indexOf(' ');
+            if (spaceAfterAbility !== -1) {
+                action = afterCmd.slice(0, spaceAfterAbility).trim();
+                targetName = afterCmd.slice(spaceAfterAbility).trim();
+            } else {
+                action = afterCmd;
+            }
+        }
 
         // Sleep
         if (action === 'sleep') {
@@ -747,7 +1245,7 @@ client.on('messageCreate', async msg => {
             game.nightActions[tag] = { action: 'sleep', target: null, role: player.role };
             game.nightPending.delete(tag);
             await msg.channel.send('You have gone to sleep. Sweet dreams. 😴');
-            await checkNightOver();
+            await checkNightOver(game);
             return;
         }
 
@@ -765,7 +1263,6 @@ client.on('messageCreate', async msg => {
         }
 
         // Self-targeting
-        const targetName = args.slice(1).join(' ');
         if (!targetName) return msg.channel.send(`Provide a target name: \`${PREFIX}action ${action} <player name>\``);
 
         let targetPlayer;
@@ -776,11 +1273,12 @@ client.on('messageCreate', async msg => {
         } else {
             // Amnesiac can target dead players
             if (action === 'remember') {
+                if (game.day < 3) return msg.channel.send("You can only remember a role on night 3 or later.");
                 const lower = targetName.toLowerCase();
                 targetPlayer = Object.values(game.dead).find(p => p.displayName.toLowerCase().startsWith(lower));
                 if (!targetPlayer) return msg.channel.send(`No dead player found matching "${targetName}".`);
             } else {
-                targetPlayer = findPlayer(targetName);
+                targetPlayer = findPlayer(game, targetName);
                 if (!targetPlayer) return msg.channel.send(`No alive player found matching "${targetName}". Check spelling or use a partial name.`);
             }
         }
@@ -820,7 +1318,7 @@ client.on('messageCreate', async msg => {
 
         // Remove from pending and check if night is over
         game.nightPending.delete(tag);
-        await checkNightOver();
+        await checkNightOver(game);
         return;
     }
 
