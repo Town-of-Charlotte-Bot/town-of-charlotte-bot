@@ -1,17 +1,14 @@
 {
-    "name": "Town of Charlotte",
-    "description": "Bot for the Town of Charlotte game",
-    "version": "0.1.0",
-    "main": "bot.js",
+    "name": "town-of-charlotte-bot",
+    "description": "Discord bot gamemaster for Town of Charlotte (Town of Salem)",
+    "version": "0.2.0",
+    "main": "index.js",
     "scripts": {
-        "start": "node bot.js"
+        "start": "node index.js",
+        "dev": "node --watch index.js"
     },
     "dependencies": {
-        "discord.js": "11.4.0",
-        "request": "2.81.0"
-    },
-    "settings": {
-        "prefix": "//"
+        "discord.js": "^14.0.0",
+        "dotenv": "^16.0.0"
     }
 }
-
